@@ -4,3 +4,56 @@
     --mit-light-gray: #d3d3d4;
     --white: #ffffff;
   }
+
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+h1 {
+    color: #A31F34; /* MIT red */
+}
+
+canvas {
+    max-width: 800px;
+    margin: 20px auto;
+}
+
+.controls {
+    margin-bottom: 20px;
+}
+
+.output {
+    display: flex;
+    justify-content: space-between;
+}
+
+.dsm-section {
+    width: 45%;
+}
+
+.graph-section {
+    width: 45%;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td {
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    border: 1px solid #ddd;
+}
+
+td.one {
+    background-color: #A31F34; /* MIT red */
+    color: white;
+}
+
+td.zero {
+    background-color: white;
+    color: black;
+}

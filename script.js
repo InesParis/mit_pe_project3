@@ -33,23 +33,42 @@ function simulateCostEvolution(n, d, gamma, steps = 1000) {
         
         totalCosts.push(costs.reduce((sum, c) => sum + c, 0));
     }
-    return totalCosts;
+    return { DSM, totalCosts };
+}
+
+function renderDSM(DSM) {
+    let container = document.getElementById("dsmContainer");
+    container.innerHTML = "<h2>DSM Matrix</h2>";
+    let table = document.createElement("table");
+    DSM.forEach(row => {
+        let tr = document.createElement("tr");
+        row.forEach(cell => {
+            let td = document.createElement("td");
+            td.className = cell ? 'one' : 'zero';
+            td.textContent = cell;
+            tr.appendChild(td);
+        });
+        table.appendChild(tr);
+    });
+    container.appendChild(table);
 }
 
 function runSimulation() {
     let n = parseInt(document.getElementById("numComponents").value);
     let d = parseInt(document.getElementById("connectivity").value);
     let gamma = parseFloat(document.getElementById("difficulty").value);
-    let costData = simulateCostEvolution(n, d, gamma);
+    let { DSM, totalCosts } = simulateCostEvolution(n, d, gamma);
+
+    renderDSM(DSM);
 
     let ctx = document.getElementById("costChart").getContext("2d");
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels: Array.from({ length: costData.length }, (_, i) => i + 1),
+            labels: Array.from({ length: totalCosts.length }, (_, i) => i + 1),
             datasets: [{
                 label: 'Total Cost Evolution',
-                data: costData,
+                data: totalCosts,
                 borderColor: 'blue',
                 fill: false
             }]
@@ -60,5 +79,5 @@ function runSimulation() {
                 y: { title: { display: true, text: 'Total Cost' } }
             }
         }
-    });
-}
+    })
+};
