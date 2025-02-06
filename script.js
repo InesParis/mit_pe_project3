@@ -82,20 +82,23 @@ function runSimulation() {
 function updateChart(totalCosts) {
     let ctx = document.getElementById("costChart").getContext("2d");
 
+    // Ensure no zero values in the log scale
+    let cleanedTotalCosts = totalCosts.map(cost => Math.max(cost, 1e-6)); // Replace zero with small value
+
     if (costChart) {
-        // Update existing chart instead of creating a new one
-        costChart.data.labels = Array.from({ length: totalCosts.length }, (_, i) => i + 1);
-        costChart.data.datasets[0].data = totalCosts;
-        costChart.update(); // Refresh the chart
+        // Update existing chart
+        costChart.data.labels = Array.from({ length: cleanedTotalCosts.length }, (_, i) => i + 1);
+        costChart.data.datasets[0].data = cleanedTotalCosts;
+        costChart.update();
     } else {
         // Create a new chart if it doesn't exist yet
         costChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: Array.from({ length: totalCosts.length }, (_, i) => i + 1),
+                labels: Array.from({ length: cleanedTotalCosts.length }, (_, i) => i + 1),
                 datasets: [{
                     label: 'Total Cost Evolution',
-                    data: totalCosts,
+                    data: cleanedTotalCosts,
                     borderColor: '#A31F34', // MIT red
                     fill: false
                 }]
@@ -108,7 +111,12 @@ function updateChart(totalCosts) {
                         title: { display: true, text: 'Total Cost' },
                         ticks: {
                             callback: function(value, index, values) {
-                                return Number(value.toString()); // Convert to number
+                                // Show only powers of 10 (e.g., 0.001, 0.01, 0.1, 1, 10, 100)
+                                const logValue = Math.log10(value);
+                                if (Number.isInteger(logValue)) {
+                                    return value;
+                                }
+                                return null; // Hide intermediate values for cleaner display
                             }
                         }
                     }
