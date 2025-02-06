@@ -1,13 +1,18 @@
 function generateDSM(n, d) {
     let DSM = Array.from({ length: n }, () => Array(n).fill(0));
 
+    // Step 1: Assign diagonal (self-dependency)
     for (let i = 0; i < n; i++) {
-        DSM[i][i] = 1; // Self-dependency
+        DSM[i][i] = 1;
+    }
 
-        let possibleConnections = [...Array(n).keys()].filter(j => j !== i); // All except itself
+    // Step 2: Enforce exactly (d-1) additional dependencies per row
+    let allIndices = [...Array(n).keys()]; // Array [0, 1, ..., n-1]
+    
+    for (let i = 0; i < n; i++) {
+        let possibleConnections = allIndices.filter(j => j !== i); // Exclude self
         let selectedConnections = new Set();
 
-        // Pick exactly (d-1) unique dependencies randomly
         while (selectedConnections.size < d - 1) {
             let target = possibleConnections[Math.floor(Math.random() * possibleConnections.length)];
             selectedConnections.add(target);
