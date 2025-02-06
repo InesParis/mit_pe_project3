@@ -69,7 +69,7 @@ function runSimulation() {
             datasets: [{
                 label: 'Total Cost Evolution',
                 data: totalCosts,
-                borderColor: 'blue',
+                borderColor: '#A31F34', /* MIT red */
                 fill: false
             }]
         },
@@ -79,5 +79,5 @@ function runSimulation() {
                 y: { title: { display: true, text: 'Total Cost' } }
             }
         }
-    })
-};
+    });
+}
