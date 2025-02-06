@@ -38,7 +38,7 @@ function simulateCostEvolution(n, d, steps = 1000) {
 
 function renderDSM(DSM) {
     let container = document.getElementById("dsmContainer");
-    container.innerHTML = "<h2>DSM Matrix</h2>";
+    container.innerHTML = "<h2>DSM</h2>";
     let table = document.createElement("table");
     DSM.forEach(row => {
         let tr = document.createElement("tr");
