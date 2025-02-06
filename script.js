@@ -38,7 +38,7 @@ function simulateCostEvolution(n, d, steps = 1000) {
 
 function renderDSM(DSM) {
     let container = document.getElementById("dsmContainer");
-    container.innerHTML = "<h2>DSM</h2>";
+    container.innerHTML = "<h2>DSM Matrix</h2>";
     let table = document.createElement("table");
     DSM.forEach(row => {
         let tr = document.createElement("tr");
@@ -57,6 +57,12 @@ let costChart; // Store chart instance globally
 function runSimulation() {
     let n = parseInt(document.getElementById("numComponents").value);
     let d = parseInt(document.getElementById("connectivity").value);
+
+    if (d >= n) {
+        alert("Dependencies cannot be greater than or equal to the number of components.");
+        return;
+    }
+
     let { DSM, totalCosts } = simulateCostEvolution(n, d);
 
     renderDSM(DSM);
@@ -87,7 +93,15 @@ function updateChart(totalCosts) {
             options: {
                 scales: {
                     x: { title: { display: true, text: 'Innovation Attempts' } },
-                    y: { title: { display: true, text: 'Total Cost' } }
+                    y: { 
+                        type: 'logarithmic',
+                        title: { display: true, text: 'Total Cost' },
+                        ticks: {
+                            callback: function(value, index, values) {
+                                return Number(value.toString()); // Convert to number
+                            }
+                        }
+                    }
                 }
             }
         });
