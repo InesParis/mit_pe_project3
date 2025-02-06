@@ -6,13 +6,12 @@ function generateDSM(n, d) {
         DSM[i][i] = 1;
     }
 
-    // Step 2: Enforce exactly (d-1) additional dependencies per row
-    let allIndices = [...Array(n).keys()]; // Array [0, 1, ..., n-1]
-    
+    // Step 2: Ensure each row gets exactly (d - 1) additional dependencies
     for (let i = 0; i < n; i++) {
-        let possibleConnections = allIndices.filter(j => j !== i); // Exclude self
+        let possibleConnections = [...Array(n).keys()].filter(j => j !== i); // Exclude self
         let selectedConnections = new Set();
 
+        // Ensure exactly (d-1) additional dependencies
         while (selectedConnections.size < d - 1) {
             let target = possibleConnections[Math.floor(Math.random() * possibleConnections.length)];
             selectedConnections.add(target);
