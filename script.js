@@ -54,6 +54,16 @@ function renderDSM(DSM) {
 
 let costChart; // Store chart instance globally
 
+function validateInputs() {
+    let n = parseInt(document.getElementById("numComponents").value);
+    let d = parseInt(document.getElementById("connectivity").value);
+
+    if (d >= n) {
+        alert("Dependencies cannot be greater than or equal to the number of components.");
+        document.getElementById("connectivity").value = n - 1;
+    }
+}
+
 function runSimulation() {
     let n = parseInt(document.getElementById("numComponents").value);
     let d = parseInt(document.getElementById("connectivity").value);
