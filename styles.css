@@ -38,6 +38,8 @@
     
     .dsm-section {
         margin-bottom: 20px;
+        overflow: auto;
+        max-height: 400px;
     }
     
     .graph-section {
@@ -65,4 +67,8 @@
     td.zero {
         background-color: white;
         color: black;
+    }
+
+    td.one, td.zero {
+        color: transparent; /* Hide the text */
     }

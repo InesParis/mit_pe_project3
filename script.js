@@ -12,7 +12,7 @@ function generateDSM(n, d) {
     return DSM;
 }
 
-function simulateCostEvolution(n, d, gamma, steps = 1000) {
+function simulateCostEvolution(n, d, steps = 1000) {
     let DSM = generateDSM(n, d);
     let costs = Array(n).fill(1 / n);
     let totalCosts = [];
@@ -24,7 +24,7 @@ function simulateCostEvolution(n, d, gamma, steps = 1000) {
         let sumAi = Ai.reduce((sum, j) => sum + costs[j], 0);
         
         Ai.forEach(j => {
-            let cNew = Math.pow(Math.random(), 1 / gamma) * costs[j];
+            let cNew = Math.random() * costs[j];
             newCosts[j] = cNew;
         });
         
@@ -45,7 +45,6 @@ function renderDSM(DSM) {
         row.forEach(cell => {
             let td = document.createElement("td");
             td.className = cell ? 'one' : 'zero';
-            td.textContent = cell;
             tr.appendChild(td);
         });
         table.appendChild(tr);
@@ -53,31 +52,44 @@ function renderDSM(DSM) {
     container.appendChild(table);
 }
 
+let costChart; // Store chart instance globally
+
 function runSimulation() {
     let n = parseInt(document.getElementById("numComponents").value);
     let d = parseInt(document.getElementById("connectivity").value);
-    let gamma = parseFloat(document.getElementById("difficulty").value);
-    let { DSM, totalCosts } = simulateCostEvolution(n, d, gamma);
+    let { DSM, totalCosts } = simulateCostEvolution(n, d);
 
     renderDSM(DSM);
+    updateChart(totalCosts);
+}
 
+function updateChart(totalCosts) {
     let ctx = document.getElementById("costChart").getContext("2d");
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: Array.from({ length: totalCosts.length }, (_, i) => i + 1),
-            datasets: [{
-                label: 'Total Cost Evolution',
-                data: totalCosts,
-                borderColor: '#A31F34', /* MIT red */
-                fill: false
-            }]
-        },
-        options: {
-            scales: {
-                x: { title: { display: true, text: 'Innovation Attempts' } },
-                y: { title: { display: true, text: 'Total Cost' } }
+
+    if (costChart) {
+        // Update existing chart instead of creating a new one
+        costChart.data.labels = Array.from({ length: totalCosts.length }, (_, i) => i + 1);
+        costChart.data.datasets[0].data = totalCosts;
+        costChart.update(); // Refresh the chart
+    } else {
+        // Create a new chart if it doesn't exist yet
+        costChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({ length: totalCosts.length }, (_, i) => i + 1),
+                datasets: [{
+                    label: 'Total Cost Evolution',
+                    data: totalCosts,
+                    borderColor: '#A31F34', // MIT red
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Innovation Attempts' } },
+                    y: { title: { display: true, text: 'Total Cost' } }
+                }
             }
-        }
-    });
+        });
+    }
 }
