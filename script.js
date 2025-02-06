@@ -6,16 +6,11 @@ function generateDSM(n, d) {
         DSM[i][i] = 1;
     }
 
-    // Step 2: Ensure each row gets exactly (d - 1) additional dependencies
+    // Step 2: Ensure exactly (d - 1) additional dependencies per row
     for (let i = 0; i < n; i++) {
         let possibleConnections = [...Array(n).keys()].filter(j => j !== i); // Exclude self
-        let selectedConnections = new Set();
-
-        // Ensure exactly (d-1) additional dependencies
-        while (selectedConnections.size < d - 1) {
-            let target = possibleConnections[Math.floor(Math.random() * possibleConnections.length)];
-            selectedConnections.add(target);
-        }
+        let shuffledConnections = possibleConnections.sort(() => Math.random() - 0.5); // Shuffle array
+        let selectedConnections = shuffledConnections.slice(0, d - 1); // Pick first (d-1) items
 
         selectedConnections.forEach(target => DSM[i][target] = 1);
     }
