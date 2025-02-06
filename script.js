@@ -1,14 +1,21 @@
 function generateDSM(n, d) {
     let DSM = Array.from({ length: n }, () => Array(n).fill(0));
+
     for (let i = 0; i < n; i++) {
-        DSM[i][i] = 1;
-        let connections = new Set();
-        while (connections.size < d - 1) {
-            let target = Math.floor(Math.random() * n);
-            if (target !== i) connections.add(target);
+        DSM[i][i] = 1; // Self-dependency
+
+        let possibleConnections = [...Array(n).keys()].filter(j => j !== i); // All except itself
+        let selectedConnections = new Set();
+
+        // Pick exactly (d-1) unique dependencies randomly
+        while (selectedConnections.size < d - 1) {
+            let target = possibleConnections[Math.floor(Math.random() * possibleConnections.length)];
+            selectedConnections.add(target);
         }
-        connections.forEach(target => DSM[i][target] = 1);
+
+        selectedConnections.forEach(target => DSM[i][target] = 1);
     }
+
     return DSM;
 }
 
