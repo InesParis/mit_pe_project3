@@ -131,3 +131,54 @@ function updateChart(totalCosts) {
         });
     }
 }
+
+// Fetch the DSM data from the JSON file
+fetch('dsm_data.json')
+    .then(response => response.json())
+    .then(data => {
+        console.log('DSM Data:', data);
+
+        // Example: Visualize DSM as a grid
+        const dsmContainer = document.getElementById('dsm-container');
+        if (dsmContainer) {
+            data.forEach((row, i) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.style.display = 'flex';
+                row.forEach((cell, j) => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.style.width = '20px';
+                    cellDiv.style.height = '20px';
+                    cellDiv.style.border = '1px solid black';
+                    cellDiv.style.backgroundColor = cell ? 'black' : 'white';
+                    rowDiv.appendChild(cellDiv);
+                });
+                dsmContainer.appendChild(rowDiv);
+            });
+        }
+    })
+    .catch(error => console.error('Error loading DSM data:', error));
+
+// Fetch the DSM data from the JSON file exported by MATLAB
+fetch('dsm_data.json')
+    .then(response => response.json())
+    .then(data => {
+        console.log('DSM Data from MATLAB:', data);
+
+        // Render the DSM matrix from MATLAB
+        const matlabDSMContainer = document.getElementById('matlab-dsm-container');
+        if (matlabDSMContainer) {
+            matlabDSMContainer.innerHTML = "<h2>MATLAB DSM</h2>";
+            let table = document.createElement("table");
+            data.forEach(row => {
+                let tr = document.createElement("tr");
+                row.forEach(cell => {
+                    let td = document.createElement("td");
+                    td.className = cell ? 'one' : 'zero';
+                    tr.appendChild(td);
+                });
+                table.appendChild(tr);
+            });
+            matlabDSMContainer.appendChild(table);
+        }
+    })
+    .catch(error => console.error('Error loading DSM data from MATLAB:', error));
