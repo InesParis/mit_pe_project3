@@ -36,15 +36,32 @@
         align-items: center;
     }
     
+    .dsm-and-graph {
+        display: flex;
+        flex-direction: row; /* Arrange DSM and graph side by side */
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px; /* Add space between the DSM and the graph */
+        width: 100%;
+    }
+
     .dsm-section {
+        flex: 2; /* Allocate more space to the DSM matrix */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden; /* Remove scrollbars */
+        max-height: 100%; /* Ensure it fits within the parent container */
+        max-width: 100%; /* Ensure it fits within the parent container */
         margin-bottom: 20px;
-        overflow: auto;
-        max-height: 400px;
     }
     
     .graph-section {
+        flex: 1; /* Allocate less space to the graph */
         width: 100%;
         max-width: 800px;
+        height: 400px; /* Ensure the graph has enough height */
+        margin: 0 auto;
     }
     
     table {
@@ -72,3 +89,26 @@
     td.one, td.zero {
         color: transparent; /* Hide the text */
     }
+
+.dsm-section table {
+    border-collapse: collapse;
+    margin: 0 auto;
+}
+
+.dsm-section td {
+    text-align: center;
+    border: 1px solid #ddd;
+    /* Default size for small matrices */
+    width: 20px;
+    height: 20px;
+}
+
+.dsm-section td.one {
+    background-color: #A31F34; /* MIT red */
+    color: transparent; /* Hide text */
+}
+
+.dsm-section td.zero {
+    background-color: white;
+    color: transparent; /* Hide text */
+}
