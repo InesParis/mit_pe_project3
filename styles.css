@@ -12,7 +12,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100vh;
+        min-height: 100vh; /* Ensure the page takes up the full height */
         background-color: #f0f0f0;
     }
     
@@ -20,20 +20,50 @@
         text-align: center;
         max-width: 1200px;
         margin: 20px;
+        padding: 10px;
+        box-sizing: border-box;
     }
     
     h1 {
         color: #A31F34; /* MIT red */
+        font-size: 2rem; /* Adjust font size for responsiveness */
+        margin-bottom: 20px;
     }
     
     .controls {
         margin-bottom: 20px;
+        display: flex;
+        flex-wrap: wrap; /* Allow controls to wrap on smaller screens */
+        justify-content: center;
+        gap: 10px; /* Add spacing between controls */
+    }
+    
+    .controls label,
+    .controls input,
+    .controls select,
+    .controls button {
+        margin: 5px;
+        font-size: 1rem;
+    }
+    
+    .controls button {
+        padding: 10px 20px;
+        background-color: #A31F34; /* MIT red */
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    
+    .controls button:hover {
+        background-color: #8a1a2b; /* Darker red for hover effect */
     }
     
     .output {
         display: flex;
         flex-direction: column;
         align-items: center;
+        width: 100%;
     }
     
     .dsm-and-graph {
@@ -43,6 +73,7 @@
         align-items: flex-start;
         gap: 20px; /* Add space between the DSM and the graph */
         width: 100%;
+        flex-wrap: wrap; /* Allow wrapping on smaller screens */
     }
 
     .dsm-section {
@@ -115,4 +146,50 @@
 .dsm-section td.zero {
     background-color: white;
     color: transparent; /* Hide text */
+}
+
+/* Media Queries for Responsiveness */
+
+/* For tablets and smaller screens */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.5rem; /* Reduce font size */
+    }
+
+    .controls {
+        flex-direction: column; /* Stack controls vertically */
+        align-items: center;
+    }
+
+    .dsm-and-graph {
+        flex-direction: column; /* Stack DSM and graph vertically */
+        align-items: center;
+    }
+
+    .graph-section {
+        height: 300px; /* Reduce graph height */
+    }
+}
+
+/* For mobile screens */
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.2rem; /* Further reduce font size */
+    }
+
+    .controls label,
+    .controls input,
+    .controls select,
+    .controls button {
+        font-size: 0.9rem; /* Reduce control font size */
+    }
+
+    .graph-section {
+        height: 250px; /* Further reduce graph height */
+    }
+
+    td {
+        width: 15px; /* Reduce DSM cell size */
+        height: 15px;
+    }
 }
