@@ -18,28 +18,49 @@ function generateDSM(n, d) {
     return DSM;
 }
 
-function simulateCostEvolution(n, d, steps = 1000) {
-    let DSM = generateDSM(n, d);
-    let costs = Array(n).fill(1 / n);
+function simulateCostEvolution(DSM, n, d, steps = 1000) {
+    let costs = Array(n).fill(1 / n); // Initial costs evenly distributed
     let totalCosts = [];
 
     for (let t = 1; t <= steps; t++) {
+        // Randomly select a component to improve
         let i = Math.floor(Math.random() * n);
+
+        // Get the dependencies of the selected component
         let Ai = DSM[i].map((val, j) => (val ? j : -1)).filter(j => j !== -1);
+
+        // Simulate cost redistribution
         let newCosts = [...costs];
         let sumAi = Ai.reduce((sum, j) => sum + costs[j], 0);
-        
+
         Ai.forEach(j => {
-            let cNew = Math.random() * costs[j];
+            let cNew = Math.random() * costs[j]; // Random improvement
             newCosts[j] = cNew;
         });
-        
+
         let newSumAi = Ai.reduce((sum, j) => sum + newCosts[j], 0);
+
+        // Accept the new costs if the total cost decreases
         if (newSumAi < sumAi) costs = newCosts;
-        
+
+        // Record the total cost at this step
         totalCosts.push(costs.reduce((sum, c) => sum + c, 0));
     }
-    return { DSM, totalCosts };
+
+    // Smooth the data to make the graph cleaner
+    const smoothedCosts = smoothData(totalCosts, 20); // Apply stronger smoothing with a window size of 20
+
+    // Sample fewer points logarithmically
+    const sampledCosts = sampleLogarithmically(smoothedCosts, 50); // Sample 50 points logarithmically
+    return sampledCosts;
+}
+
+function computeTheoreticalCostEvolution(n, d, steps = 1000) {
+    const tPlot = Array.from({ length: steps }, (_, i) => Math.pow(10, i / 20)); // Logarithmic time steps
+    const t0 = factorial(d + 1) / Math.pow(d, d + 2) * n; // Scaling factor
+    const cAve = tPlot.map(t => Math.pow(t / t0 + 1, -1 / d)); // Theoretical cost evolution
+
+    return { tPlot, cAve };
 }
 
 function renderDSM(DSM) {
@@ -150,13 +171,13 @@ function generateDSMFromMethod(n, d, method) {
 }
 
 // Function to compute theoretical cost evolution
-function computeCostEvolution(n, d, steps = 1000) {
-    const tPlot = Array.from({ length: steps }, (_, i) => Math.pow(10, i / 20)); // Logarithmic time steps
-    const t0 = factorial(d + 1) / Math.pow(d, d + 2) * n; // Scaling factor
-    const cAve = tPlot.map(t => Math.pow(t / t0 + 1, -1 / d)); // Theoretical cost evolution
+function computeTheoreticalCostEvolution(n, d, steps = 1000) {
+    const tPlot = Array.from({ length: steps }, (_, i) => Math.pow(10, i / 20));
+    const t0 = factorial(d + 1) / Math.pow(d, d + 2) * n;
+    const cAve = tPlot.map(t => Math.pow(t / t0 + 1, -1 / d));
 
-    // Ensure the cost values are within a reasonable range
-    const cleanedCAve = cAve.map(value => Math.max(value, 1e-6)); // Replace very small values with a minimum
+    // Replace very small values with a minimum value
+    const cleanedCAve = cAve.map(value => Math.max(value, 1e-6));
 
     return { tPlot, cAve: cleanedCAve };
 }
@@ -178,15 +199,35 @@ function runSimulation() {
         return;
     }
 
-    // Generate DSM matrix in JavaScript
+    // Generate DSM matrix based on the selected method
     let DSM = generateDSMFromMethod(n, d, method);
+    console.log("Generated DSM:", DSM); // Debugging
     renderDSM(DSM);
 
+    // Simulate cost evolution using the generated DSM
+    const simulatedCosts = simulateCostEvolution(DSM, n, d);
+    console.log("Simulated Costs:", simulatedCosts); // Debugging
+
     // Compute theoretical cost evolution
-    const { tPlot, cAve } = computeCostEvolution(n, d);
-    updateChart(tPlot, cAve);
+    const { tPlot, cAve } = computeTheoreticalCostEvolution(n, d);
+    console.log("Theoretical tPlot:", tPlot); // Debugging
+    console.log("Theoretical cAve:", cAve);   // Debugging
+
+    // Update the graph with both simulated and theoretical results
+    updateChart(tPlot, simulatedCosts, cAve);
 }
 
+function sampleLogarithmically(data, numSamples) {
+    const sampled = [];
+    const maxIndex = data.length - 1;
+
+    for (let i = 0; i < numSamples; i++) {
+        const index = Math.floor(Math.pow(maxIndex, i / (numSamples - 1))); // Logarithmic sampling
+        sampled.push(data[index]);
+    }
+
+    return sampled;
+}
 // Render the DSM matrix
 function renderDSM(DSM) {
     let container = document.getElementById("dsmContainer");
@@ -215,40 +256,102 @@ function renderDSM(DSM) {
     container.appendChild(table);
 }
 
-// Simulate cost evolution (dummy implementation for now)
-function simulateCostEvolution(DSM, n, d) {
-    let totalCosts = Array.from({ length: 1000 }, (_, i) => Math.random() * 10); // Dummy data
-    return totalCosts;
+function simulateCostEvolution(DSM, n, d, steps = 1000) {
+    let costs = Array(n).fill(1 / n); // Initial costs evenly distributed
+    let totalCosts = [];
+
+    for (let t = 1; t <= steps; t++) {
+        let i = Math.floor(Math.random() * n);
+        let Ai = DSM[i].map((val, j) => (val ? j : -1)).filter(j => j !== -1);
+
+        let newCosts = [...costs];
+        let sumAi = Ai.reduce((sum, j) => sum + costs[j], 0);
+
+        Ai.forEach(j => {
+            let cNew = Math.random() * costs[j];
+            newCosts[j] = cNew;
+        });
+
+        let newSumAi = Ai.reduce((sum, j) => sum + newCosts[j], 0);
+
+        if (newSumAi < sumAi) costs = newCosts;
+
+        totalCosts.push(costs.reduce((sum, c) => sum + c, 0));
+    }
+
+    // Replace very small values with a minimum value to avoid logarithmic scale issues
+    const cleanedCosts = totalCosts.map(value => Math.max(value, 1e-6));
+
+    // Smooth the data to make the graph cleaner
+    const smoothedCosts = smoothData(cleanedCosts, 20);
+
+    // Sample fewer points logarithmically
+    const sampledCosts = sampleLogarithmically(smoothedCosts, 50);
+    return sampledCosts;
 }
 
-// Update the chart with theoretical cost evolution data
-function updateChart(tPlot, cAve) {
+function smoothData(data, windowSize) {
+    const smoothed = [];
+    for (let i = 0; i < data.length; i++) {
+        const start = Math.max(0, i - windowSize);
+        const end = Math.min(data.length, i + windowSize + 1);
+        const window = data.slice(start, end);
+        const average = window.reduce((sum, val) => sum + val, 0) / window.length;
+        smoothed.push(average);
+    }
+    return smoothed;
+}
+
+function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
     const ctx = document.getElementById("costChart").getContext("2d");
 
     if (costChart) {
-        // Reset the chart data with new values
         costChart.data.labels = tPlot;
-        costChart.data.datasets[0].data = cAve;
+        costChart.data.datasets[0].data = simulatedCosts;
+        costChart.data.datasets[1].data = theoreticalCosts;
         costChart.update();
     } else {
-        // Create a new chart if it doesn't exist yet
         costChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: tPlot,
-                datasets: [{
-                    label: 'Theoretical Cost Evolution',
-                    data: cAve,
-                    borderColor: '#A31F34', // MIT red
-                    borderWidth: 2,
-                    fill: false,
-                    pointRadius: 3, // Add points to match the style in the picture
-                    pointBackgroundColor: '#A31F34'
-                }]
+                datasets: [
+                    {
+                        label: 'Simulated Cost Evolution',
+                        data: simulatedCosts,
+                        borderColor: '#A31F34', // MIT red
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#A31F34'
+                    },
+                    {
+                        label: 'Theoretical Cost Evolution',
+                        data: theoreticalCosts,
+                        borderColor: '#FFA500', // Orange for theoretical curve
+                        borderWidth: 2,
+                        fill: false,
+                        borderDash: [5, 5]
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(context) {
+                                return `Cost: ${context.raw.toExponential(2)}`; // Scientific notation
+                            }
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
                 scales: {
                     x: {
                         type: 'logarithmic',
@@ -258,14 +361,19 @@ function updateChart(tPlot, cAve) {
                         },
                         ticks: {
                             callback: function(value) {
-                                // Show only powers of 10 (e.g., 10^0, 10^1, 10^2)
                                 const logValue = Math.log10(value);
                                 if (Number.isInteger(logValue)) {
                                     return `10^${logValue}`;
                                 }
-                                return null; // Hide intermediate values
+                                return null;
                             }
-                        }
+                        },
+                        grid: {
+                            display: true,
+                            color: '#e0e0e0'
+                        },
+                        min: 1, // Set minimum value for x-axis
+                        max: 1000 // Set maximum value for x-axis
                     },
                     y: {
                         type: 'logarithmic',
@@ -275,19 +383,15 @@ function updateChart(tPlot, cAve) {
                         },
                         ticks: {
                             callback: function(value) {
-                                // Show only powers of 10 (e.g., 10^-3, 10^-2, 10^-1, 10^0)
-                                const logValue = Math.log10(value);
-                                if (Number.isInteger(logValue)) {
-                                    return `10^${logValue}`;
-                                }
-                                return null; // Hide intermediate values
+                                return `10^${Math.log10(value).toFixed(0)}`; // Scientific notation
                             }
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false // Hide the legend to match the style in the picture
+                        },
+                        grid: {
+                            display: true,
+                            color: '#e0e0e0'
+                        },
+                        min: 1e-6, // Set minimum value for y-axis
+                        max: 1 // Set maximum value for y-axis
                     }
                 }
             }

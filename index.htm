@@ -16,7 +16,7 @@
             <label for="connectivity">Dependencies:</label>
             <input type="number" id="connectivity" value="2" min="1" onchange="validateInputs()" oninput="validateInputs()">
             <label for="generationMethod">Generation Method:</label>
-            <select id="generationMethod">
+            <select id="generationMethod" onchange="runSimulation()">
                 <option value="rand">Random</option>
                 <option value="ideg">Fixed In-Degree</option>
                 <option value="odeg">Fixed Out-Degree</option>
