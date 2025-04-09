@@ -11,13 +11,16 @@
     <div class="container">
         <h1>Technology cost evolution simulation</h1>
         <div class="controls">
-            <ul>
-                <li>
+         <ul>
+         <li>
             <label for="numComponents">Number of components:</label>
             <input type="number" id="numComponents" value="10" min="2" onchange="validateInputs()">
         </li>
+        <li>
             <label for="connectivity">Dependencies:</label>
             <input type="number" id="connectivity" value="2" min="1" onchange="validateInputs()" oninput="validateInputs()">
+        </li>
+        <li>
             <label for="generationMethod">Generation method:</label>
             <select id="generationMethod" onchange="runSimulation()">
                 <option value="ideg">Fixed out-degree</option>
@@ -25,7 +28,10 @@
                 <option value="rand">Random</option>
                
             </select>
+        </li>
+        <li>
             <button onclick="runSimulation()">Run simulation</button>
+        </li>
         
         </ul>
         </div>
