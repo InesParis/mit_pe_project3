@@ -148,24 +148,7 @@ function generateDSMFromMethod(n, d, method) {
                 }
             }
         }
-    } else if (method === 'loca') {
-        // Local method (chain)
-        for (let i = 0; i < n; i++) {
-            for (let k = 1; k < d; k++) {
-                const j = (i + k) % n;
-                DSM[i][j] = true;
-            }
-        }
-    } else if (method === 'cent') {
-        // Centralized method
-        const center = Math.floor(n / 2);
-        for (let i = 0; i < n; i++) {
-            if (i !== center) {
-                DSM[i][center] = true;
-                DSM[center][i] = true;
-            }
-        }
-    }
+    } 
 
     return DSM;
 }
