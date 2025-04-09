@@ -18,9 +18,9 @@
             <input type="number" id="connectivity" value="2" min="1" onchange="validateInputs()" oninput="validateInputs()">
             <label for="generationMethod">Generation method:</label>
             <select id="generationMethod" onchange="runSimulation()">
-                <option value="rand">Random</option>
                 <option value="ideg">Fixed out-degree</option>
                 <option value="odeg">Fixed in-degree</option>
+                <option value="rand">Random</option>
                
             </select>
             <button onclick="runSimulation()">Run simulation</button>

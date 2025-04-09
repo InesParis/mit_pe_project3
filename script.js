@@ -111,20 +111,7 @@ function generateDSMFromMethod(n, d, method) {
         DSM[i][i] = true;
     }
 
-    if (method === 'rand') {
-        // Random method
-        let positions = [];
-        for (let i = 0; i < n; i++) {
-            for (let j = 0; j < n; j++) {
-                if (i !== j) positions.push([i, j]);
-            }
-        }
-        positions = positions.sort(() => Math.random() - 0.5); // Shuffle
-        for (let k = 0; k < n * (d - 1); k++) {
-            const [i, j] = positions[k];
-            DSM[i][j] = true;
-        }
-    } else if (method === 'ideg') {
+    if (method === 'ideg') {
         // Fixed in-degree method
         for (let i = 0; i < n; i++) {
             let count = 0;
@@ -136,6 +123,20 @@ function generateDSMFromMethod(n, d, method) {
                 }
             }
         }
+      
+    } else if (method === 'rand') {
+          // Random method
+          let positions = [];
+          for (let i = 0; i < n; i++) {
+              for (let j = 0; j < n; j++) {
+                  if (i !== j) positions.push([i, j]);
+              }
+          }
+          positions = positions.sort(() => Math.random() - 0.5); // Shuffle
+          for (let k = 0; k < n * (d - 1); k++) {
+              const [i, j] = positions[k];
+              DSM[i][j] = true;
+          }
     } else if (method === 'odeg') {
         // Fixed out-degree method
         for (let i = 0; i < n; i++) {
