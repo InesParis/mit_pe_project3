@@ -301,7 +301,7 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
                 labels: tPlot,
                 datasets: [
                     {
-                        label: 'Simulated Cost Evolution',
+                        label: 'Simulated cost evolution',
                         data: simulatedCosts,
                         borderColor: '#A31F34', // MIT red
                         borderWidth: 2,
@@ -310,7 +310,7 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
                         pointBackgroundColor: '#A31F34'
                     },
                     {
-                        label: 'Theoretical Cost Evolution',
+                        label: 'Theoretical cost evolution',
                         data: theoreticalCosts,
                         borderColor: '#FFA500', // Orange for theoretical curve
                         borderWidth: 2,
