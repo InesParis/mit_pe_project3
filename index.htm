@@ -5,25 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <title>Technology Cost Evolution Simulation</title>
+    <title>Technology cost evolution simulation</title>
 </head>
 <body>
     <div class="container">
-        <h1>Technology Cost Evolution Simulation</h1>
+        <h1>Technology cost evolution simulation</h1>
         <div class="controls">
-            <label for="numComponents">Number of Components:</label>
+            <label for="numComponents">Number of components:</label>
             <input type="number" id="numComponents" value="10" min="2" onchange="validateInputs()">
             <label for="connectivity">Dependencies:</label>
             <input type="number" id="connectivity" value="2" min="1" onchange="validateInputs()" oninput="validateInputs()">
-            <label for="generationMethod">Generation Method:</label>
+            <label for="generationMethod">Generation method:</label>
             <select id="generationMethod" onchange="runSimulation()">
                 <option value="rand">Random</option>
-                <option value="ideg">Fixed In-Degree</option>
-                <option value="odeg">Fixed Out-Degree</option>
-                <option value="loca">Local</option>
-                <option value="cent">Centralized</option>
+                <option value="ideg">Fixed in-degree</option>
+                <option value="odeg">Fixed out-degree</option>
+               
             </select>
-            <button onclick="runSimulation()">Run Simulation</button>
+            <button onclick="runSimulation()">Run simulation</button>
         </div>
         <div class="output">
             <div class="dsm-and-graph">
