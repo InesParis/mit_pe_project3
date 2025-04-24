@@ -102,8 +102,12 @@
         flex: 2; /* Allocate less space to the graph */
         width: 100%;
         max-width: 800px;
-        height: 400px; /* Ensure the graph has enough height */
+        aspect-ratio: 2 / 1; /* Enforce a 1:2 width-to-height ratio */
         margin: 0 auto;
+        background-color: #f9f9f9; /* Optional: Add a light background for better visibility */
+        border: 1px solid #ddd; /* Optional: Add a border for better visibility */
+        border-radius: 8px; /* Optional: Rounded corners for a modern look */
+        overflow: hidden; /* Ensure content doesn't overflow */
     }
     
     table {

@@ -23,35 +23,29 @@ function simulateCostEvolution(DSM, n, d, steps = 1000) {
     let totalCosts = [];
 
     for (let t = 1; t <= steps; t++) {
-        // Randomly select a component to improve
         let i = Math.floor(Math.random() * n);
-
-        // Get the dependencies of the selected component
         let Ai = DSM[i].map((val, j) => (val ? j : -1)).filter(j => j !== -1);
 
-        // Simulate cost redistribution
         let newCosts = [...costs];
         let sumAi = Ai.reduce((sum, j) => sum + costs[j], 0);
 
         Ai.forEach(j => {
-            let cNew = Math.random() * costs[j]; // Random improvement
+            let cNew = Math.random() * costs[j];
             newCosts[j] = cNew;
         });
 
         let newSumAi = Ai.reduce((sum, j) => sum + newCosts[j], 0);
 
-        // Accept the new costs if the total cost decreases
         if (newSumAi < sumAi) costs = newCosts;
 
-        // Record the total cost at this step
         totalCosts.push(costs.reduce((sum, c) => sum + c, 0));
     }
 
-    // Smooth the data to make the graph cleaner
-    const smoothedCosts = smoothData(totalCosts, 20); // Apply stronger smoothing with a window size of 20
+    // Smooth the data to align better with theoretical evolution
+    const smoothedCosts = smoothData(totalCosts, 10); // Apply moderate smoothing with a window size of 10
 
     // Sample fewer points logarithmically
-    const sampledCosts = sampleLogarithmically(smoothedCosts, 50); // Sample 50 points logarithmically
+    const sampledCosts = sampleLogarithmically(smoothedCosts, 100); // Sample 100 points logarithmically
     return sampledCosts;
 }
 
@@ -178,24 +172,27 @@ function runSimulation() {
     let d = parseInt(document.getElementById("connectivity").value);
     let method = document.getElementById("generationMethod").value;
 
+    if (n > 100) {
+        alert("The number of components cannot exceed 100.");
+        document.getElementById("numComponents").value = 100;
+        return;
+    }
+
     if (d >= n) {
         alert("Dependencies cannot be greater than or equal to the number of components.");
+        document.getElementById("connectivity").value = n - 1;
         return;
     }
 
     // Generate DSM matrix based on the selected method
     let DSM = generateDSMFromMethod(n, d, method);
-    console.log("Generated DSM:", DSM); // Debugging
     renderDSM(DSM);
 
     // Simulate cost evolution using the generated DSM
     const simulatedCosts = simulateCostEvolution(DSM, n, d);
-    console.log("Simulated Costs:", simulatedCosts); // Debugging
 
     // Compute theoretical cost evolution
     const { tPlot, cAve } = computeTheoreticalCostEvolution(n, d);
-    console.log("Theoretical tPlot:", tPlot); // Debugging
-    console.log("Theoretical cAve:", cAve);   // Debugging
 
     // Update the graph with both simulated and theoretical results
     updateChart(tPlot, simulatedCosts, cAve);
@@ -211,67 +208,6 @@ function sampleLogarithmically(data, numSamples) {
     }
 
     return sampled;
-}
-// Render the DSM matrix
-function renderDSM(DSM) {
-    let container = document.getElementById("dsmContainer");
-    container.innerHTML = "<h2>Generated DSM</h2>";
-    let table = document.createElement("table");
-
-    // Dynamically calculate square size based on the number of components and container size
-    const n = DSM.length;
-    const containerWidth = container.offsetWidth || 800; // Default to 800px if width is not available
-    const containerHeight = container.offsetHeight || 400; // Default to 400px if height is not available
-    const maxSquareSize = Math.min(containerWidth, containerHeight) / n; // Fit squares within container
-    const squareSize = Math.max(2, Math.min(20, maxSquareSize)); // Ensure a minimum size of 2px and a maximum of 20px
-
-    DSM.forEach(row => {
-        let tr = document.createElement("tr");
-        row.forEach(cell => {
-            let td = document.createElement("td");
-            td.className = cell ? 'one' : 'zero';
-            td.style.width = `${squareSize}px`;
-            td.style.height = `${squareSize}px`;
-            tr.appendChild(td);
-        });
-        table.appendChild(tr);
-    });
-
-    container.appendChild(table);
-}
-
-function simulateCostEvolution(DSM, n, d, steps = 1000) {
-    let costs = Array(n).fill(1 / n); // Initial costs evenly distributed
-    let totalCosts = [];
-
-    for (let t = 1; t <= steps; t++) {
-        let i = Math.floor(Math.random() * n);
-        let Ai = DSM[i].map((val, j) => (val ? j : -1)).filter(j => j !== -1);
-
-        let newCosts = [...costs];
-        let sumAi = Ai.reduce((sum, j) => sum + costs[j], 0);
-
-        Ai.forEach(j => {
-            let cNew = Math.random() * costs[j];
-            newCosts[j] = cNew;
-        });
-
-        let newSumAi = Ai.reduce((sum, j) => sum + newCosts[j], 0);
-
-        if (newSumAi < sumAi) costs = newCosts;
-
-        totalCosts.push(costs.reduce((sum, c) => sum + c, 0));
-    }
-
-    // Replace very small values with a minimum value to avoid logarithmic scale issues
-    const cleanedCosts = totalCosts.map(value => Math.max(value, 1e-6));
-
-    // Smooth the data to make the graph cleaner
-    const smoothedCosts = smoothData(cleanedCosts, 20);
-
-    // Sample fewer points logarithmically
-    const sampledCosts = sampleLogarithmically(smoothedCosts, 50);
-    return sampledCosts;
 }
 
 function smoothData(data, windowSize) {
@@ -301,7 +237,7 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
                 labels: tPlot,
                 datasets: [
                     {
-                        label: 'Simulated cost evolution',
+                        label: 'Simulated Cost Evolution',
                         data: simulatedCosts,
                         borderColor: '#A31F34', // MIT red
                         borderWidth: 2,
@@ -310,7 +246,7 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
                         pointBackgroundColor: '#A31F34'
                     },
                     {
-                        label: 'Theoretical cost evolution',
+                        label: 'Theoretical Cost Evolution',
                         data: theoreticalCosts,
                         borderColor: '#FFA500', // Orange for theoretical curve
                         borderWidth: 2,
@@ -322,6 +258,7 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                aspectRatio: 2, // Set graph dimensions to 1:2 ratio (wider than tall)
                 plugins: {
                     tooltip: {
                         enabled: true,
