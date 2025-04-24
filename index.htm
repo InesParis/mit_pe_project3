@@ -5,39 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <title>Technology cost evolution simulation</title>
+    <title>Technology Cost Evolution Simulation</title>
 </head>
 <body>
     <div class="container">
-        <h1>Technology cost evolution simulation</h1>
+        <h1>Technology Cost Evolution Simulation</h1>
         <div class="controls">
-         <ul class="list-controls">
-         <li>
-            <label for="numComponents">Number of components:</label>
-            <input type="number" id="numComponents" value="10" min="2" onchange="validateInputs()">
-        </li>
-        <li>
-            <label for="connectivity">Dependencies:</label>
-            <input type="number" id="connectivity" value="2" min="1" onchange="validateInputs()" oninput="validateInputs()">
-        </li>
-        <li>
-            <label for="generationMethod">Generation method:</label>
-            <select id="generationMethod" onchange="runSimulation()">
-                <option value="ideg">Fixed out-degree</option>
-                <option value="odeg">Fixed in-degree</option>
-                <option value="rand">Random</option>
-               
-            </select>
-        </li>
-        <li>
-            <button onclick="runSimulation()">Run simulation</button>
-        </li>
-        
-        </ul>
+            <ul class="list-controls">
+                <li>
+                    <label for="numComponents">Number of components:</label>
+                    <input type="number" id="numComponents" value="10" min="2" onchange="validateInputs()">
+                </li>
+                <li>
+                    <label for="connectivity">Dependencies:</label>
+                    <input type="number" id="connectivity" value="2" min="1" onchange="validateInputs()" oninput="validateInputs()">
+                </li>
+                <li>
+                    <label for="generationMethod">Generation method:</label>
+                    <select id="generationMethod" onchange="runSimulation()">
+                        <option value="ideg">Fixed out-degree</option>
+                        <option value="odeg">Fixed in-degree</option>
+                        <option value="rand">Random</option>
+                    </select>
+                </li>
+                <li>
+                    <button onclick="runSimulation()">Run simulation</button>
+                </li>
+            </ul>
         </div>
         <div class="output">
-            <div class="dsm-and-graph">
-                <div id="dsmContainer" class="dsm-section"></div>
+            <div id="loadingIndicator" style="display: none; text-align: center; margin-top: 10px;">
+                <p>Loading simulation...</p>
+            </div>
+            <div class="horizontal-container">
+                <div id="dsmContainer" class="dsm-section">
+                    <h2>Generated DSM</h2>
+                </div>
                 <div class="graph-section">
                     <canvas id="costChart"></canvas>
                 </div>

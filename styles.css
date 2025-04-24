@@ -29,7 +29,9 @@ h1 {
     font-size: 2.5rem;
     margin-bottom: 40px; /* Add more spacing below the title */
 }
-
+h2 {
+     color: #A31F34; /* MIT red */
+    }
 .controls {
     margin-bottom: 40px; /* Add more spacing below controls */
     display: flex;
@@ -73,70 +75,43 @@ h1 {
     width: 100%;
 }
 
-.dsm-and-graph {
+.horizontal-container {
     display: flex;
-    flex-direction: row; /* Arrange DSM and graph side by side */
-    justify-content: space-evenly; /* Add even spacing between DSM and graph */
+    justify-content: space-between;
     align-items: flex-start;
-    gap: 80px; /* Increase gap for better spacing */
-    width: 100%;
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 20px; /* Space between DSM and graph */
+    margin-top: 20px;
 }
 
 .dsm-section {
-    flex: 1; /* Allocate equal space to DSM and graph */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    max-height: 100%;
-    max-width: 100%;
-    margin-bottom: 20px;
-    padding: 20px; /* Add more padding for better spacing */
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add subtle shadow for better visibility */
+    width: 35%; /* Allocate 35% of the width for DSM */
+    text-align: center;
 }
 
 .graph-section {
-    flex: 1; /* Allocate equal space to DSM and graph */
-    width: 100%;
-    max-width: 1000px; /* Increase max width for the graph */
-    margin: 0 auto;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add subtle shadow for better visibility */
-    overflow: hidden;
-    height: auto; /* Allow dynamic height adjustment */
+    width: 60%; /* Allocate 60% of the width for the graph */
 }
 
-table {
+.dsm-section table td.one {
+    background-color: #A31F34; /* MIT red for 'one' */
+}
+
+.dsm-section table td.zero {
+    background-color: #f0f0f0; /* Light gray for 'zero' */
+}
+
+.dsm-section table {
     border-collapse: collapse;
-    margin: 0 auto;
+    margin: auto; /* Center the DSM horizontally */
 }
 
-td {
-    width: 25px; /* Increase cell size for better visibility */
-    height: 25px;
-    text-align: center;
-    border: 1px solid #ddd;
+.dsm-section table td {
+    border: 1px solid #ccc; /* Light border for clarity */
 }
 
-td.one {
-    background-color: #A31F34; /* MIT red */
-    color: white;
-}
-
-td.zero {
-    background-color: white;
-    color: black;
-}
-
-td.one,
-td.zero {
-    color: transparent; /* Hide the text */
+canvas {
+    max-width: 100%; /* Ensure the graph scales properly */
+    height: auto; /* Maintain aspect ratio */
 }
 
 /* Media Queries for Responsiveness */
