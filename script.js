@@ -41,12 +41,14 @@ function simulateCostEvolution(DSM, n, d, steps = 1000) {
         totalCosts.push(costs.reduce((sum, c) => sum + c, 0));
     }
 
-    // Smooth the data to align better with theoretical evolution
-    const smoothedCosts = smoothData(totalCosts, 10); // Apply moderate smoothing with a window size of 10
+    // Dynamically adjust smoothing window size for small datasets
+    const smoothingWindow = Math.max(2, Math.floor(steps / Math.max(10, n)));
+    const smoothedCosts = smoothData(totalCosts, smoothingWindow);
 
-    // Sample fewer points logarithmically
-    const sampledCosts = sampleLogarithmically(smoothedCosts, 100); // Sample 100 points logarithmically
-    return sampledCosts;
+    // Dynamically adjust the number of sampled points for small datasets
+    const sampledCosts = sampleLogarithmically(smoothedCosts, Math.max(10, Math.min(100, steps / 10)));
+
+    return sampledCosts.map(c => Math.max(c, 1e-6)); // Ensure no values are below 1e-6
 }
 
 function computeTheoreticalCostEvolution(n, d, steps = 1000) {
@@ -54,7 +56,7 @@ function computeTheoreticalCostEvolution(n, d, steps = 1000) {
     const t0 = factorial(d + 1) / Math.pow(d, d + 2) * n; // Scaling factor
     const cAve = tPlot.map(t => Math.pow(t / t0 + 1, -1 / d)); // Theoretical cost evolution
 
-    return { tPlot, cAve };
+    return { tPlot, cAve: cAve.map(c => Math.max(c, 1e-6)) }; // Ensure no values are below 1e-6
 }
 
 function renderDSM(DSM) {
@@ -148,18 +150,6 @@ function generateDSMFromMethod(n, d, method) {
     return DSM;
 }
 
-// Function to compute theoretical cost evolution
-function computeTheoreticalCostEvolution(n, d, steps = 1000) {
-    const tPlot = Array.from({ length: steps }, (_, i) => Math.pow(10, i / 20));
-    const t0 = factorial(d + 1) / Math.pow(d, d + 2) * n;
-    const cAve = tPlot.map(t => Math.pow(t / t0 + 1, -1 / d));
-
-    // Replace very small values with a minimum value
-    const cleanedCAve = cAve.map(value => Math.max(value, 1e-6));
-
-    return { tPlot, cAve: cleanedCAve };
-}
-
 // Factorial helper function
 function factorial(num) {
     if (num === 0 || num === 1) return 1;
@@ -194,8 +184,21 @@ function runSimulation() {
     // Compute theoretical cost evolution
     const { tPlot, cAve } = computeTheoreticalCostEvolution(n, d);
 
+    // Resample tPlot and cAve to match the length of simulatedCosts
+    const resampledTPlot = sampleLogarithmically(tPlot, simulatedCosts.length);
+    const resampledCAve = sampleLogarithmically(cAve, simulatedCosts.length);
+
+    // Ensure all data points are strictly positive
+    const adjustedSimulatedCosts = simulatedCosts.map(c => Math.max(c, 1e-6));
+    const adjustedCAve = resampledCAve.map(c => Math.max(c, 1e-6));
+
+    // Debugging: Log data lengths and values
+    console.log("Simulated Costs Length:", adjustedSimulatedCosts.length);
+    console.log("Resampled tPlot Length:", resampledTPlot.length);
+    console.log("Resampled cAve Length:", adjustedCAve.length);
+
     // Update the graph with both simulated and theoretical results
-    updateChart(tPlot, simulatedCosts, cAve);
+    updateChart(resampledTPlot, adjustedSimulatedCosts, adjustedCAve);
 }
 
 function sampleLogarithmically(data, numSamples) {
@@ -223,7 +226,24 @@ function smoothData(data, windowSize) {
 }
 
 function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
-    const ctx = document.getElementById("costChart").getContext("2d");
+    const canvas = document.getElementById("costChart");
+    const ctx = canvas.getContext("2d");
+
+    // Dynamically adjust canvas height based on the number of components
+    const numComponents = simulatedCosts.length;
+    const baseHeight = 400; // Base height for small datasets
+    const heightMultiplier = 5; // Additional height per component
+    canvas.style.height = `${baseHeight + numComponents * heightMultiplier}px`;
+
+    // Ensure data alignment
+    if (tPlot.length !== simulatedCosts.length || tPlot.length !== theoreticalCosts.length) {
+        console.error("Data length mismatch:", {
+            tPlot: tPlot.length,
+            simulatedCosts: simulatedCosts.length,
+            theoreticalCosts: theoreticalCosts.length
+        });
+        return;
+    }
 
     if (costChart) {
         costChart.data.labels = tPlot;
@@ -242,8 +262,7 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
                         borderColor: '#A31F34', // MIT red
                         borderWidth: 2,
                         fill: false,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#A31F34'
+                        pointRadius: 0, // No points for a cleaner logarithmic graph
                     },
                     {
                         label: 'Theoretical Cost Evolution',
@@ -251,20 +270,19 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
                         borderColor: '#FFA500', // Orange for theoretical curve
                         borderWidth: 2,
                         fill: false,
-                        borderDash: [5, 5]
+                        borderDash: [5, 5] // Dashed line for theoretical curve
                     }
                 ]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
-                aspectRatio: 2, // Set graph dimensions to 1:2 ratio (wider than tall)
+                maintainAspectRatio: false, // Allow dynamic height adjustment
                 plugins: {
                     tooltip: {
                         enabled: true,
                         callbacks: {
                             label: function(context) {
-                                return `Cost: ${context.raw.toExponential(2)}`; // Scientific notation
+                                return `Cost: ${context.raw.toExponential(2)}`; // Show values in exponential format
                             }
                         }
                     },
@@ -275,44 +293,36 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
                 },
                 scales: {
                     x: {
-                        type: 'logarithmic',
+                        type: 'logarithmic', // Logarithmic scale for x-axis
                         title: {
                             display: true,
                             text: '# of Improvement Attempts'
                         },
                         ticks: {
                             callback: function(value) {
-                                const logValue = Math.log10(value);
-                                if (Number.isInteger(logValue)) {
-                                    return `10^${logValue}`;
-                                }
-                                return null;
+                                return value.toExponential(0); // Show exponential values
                             }
                         },
                         grid: {
                             display: true,
                             color: '#e0e0e0'
-                        },
-                        min: 1, // Set minimum value for x-axis
-                        max: 1000 // Set maximum value for x-axis
+                        }
                     },
                     y: {
-                        type: 'logarithmic',
+                        type: 'logarithmic', // Logarithmic scale for y-axis
                         title: {
                             display: true,
                             text: 'Cost'
                         },
                         ticks: {
                             callback: function(value) {
-                                return `10^${Math.log10(value).toFixed(0)}`; // Scientific notation
+                                return value.toExponential(1); // Show exponential values
                             }
                         },
                         grid: {
                             display: true,
                             color: '#e0e0e0'
-                        },
-                        min: 1e-6, // Set minimum value for y-axis
-                        max: 1 // Set maximum value for y-axis
+                        }
                     }
                 }
             }
