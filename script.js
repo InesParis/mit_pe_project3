@@ -152,114 +152,6 @@ function factorial(num) {
     return num * factorial(num - 1);
 }
 
-function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
-    const canvas = document.getElementById("costChart");
-    const ctx = canvas.getContext("2d");
-
-    // Fix the graph size
-    canvas.style.width = "100%";
-    canvas.style.height = "400px"; // Fixed height
-
-    // Ensure data alignment
-    if (tPlot.length !== simulatedCosts.length || tPlot.length !== theoreticalCosts.length) {
-        console.error("Data length mismatch:", {
-            tPlot: tPlot.length,
-            simulatedCosts: simulatedCosts.length,
-            theoreticalCosts: theoreticalCosts.length
-        });
-        return;
-    }
-
-    if (costChart) {
-        costChart.data.labels = tPlot;
-        costChart.data.datasets[0].data = simulatedCosts;
-        costChart.data.datasets[1].data = theoreticalCosts;
-        costChart.update();
-    } else {
-        costChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: tPlot,
-                datasets: [
-                    {
-                        label: 'Simulated Cost Evolution',
-                        data: simulatedCosts,
-                        borderColor: '#A31F34', // MIT red
-                        borderWidth: 2,
-                        fill: false,
-                        pointRadius: 0, // No points for a cleaner logarithmic graph
-                    },
-                    {
-                        label: 'Theoretical Cost Evolution',
-                        data: theoreticalCosts,
-                        borderColor: '#FFA500', // Orange for theoretical curve
-                        borderWidth: 2,
-                        fill: false,
-                        borderDash: [5, 5] // Dashed line for theoretical curve
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false, // Allow dynamic height adjustment
-                plugins: {
-                    tooltip: {
-                        enabled: true,
-                        callbacks: {
-                            label: function(context) {
-                                return `Cost: ${context.raw.toExponential(2)}`; // Show values in exponential format
-                            }
-                        }
-                    },
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                },
-                scales: {
-                    x: {
-                        type: 'logarithmic', // Logarithmic scale for x-axis
-                        title: {
-                            display: true,
-                            text: '# of Improvement Attempts'
-                        },
-                        ticks: {
-                            callback: function(value) {
-                                return `10^${Math.log10(value).toFixed(0)}`; // Show exponential values
-                            }
-                        },
-                        grid: {
-                            display: true,
-                            color: '#e0e0e0'
-                        }
-                    },
-                    y: {
-                        type: 'logarithmic', // Logarithmic scale for y-axis
-                        title: {
-                            display: true,
-                            text: 'Cost'
-                        },
-                        ticks: {
-                            callback: function(value, index, values) {
-                                // Ensure all labels are unique powers of ten
-                                const logValue = Math.log10(value).toFixed(0);
-                                if (index === 0 || value !== values[index - 1]?.value) {
-                                    return `10^${logValue}`;
-                                }
-                                return null; // Skip repeated labels
-                            }
-                        },
-                        grid: {
-                            display: true,
-                            color: '#e0e0e0'
-                        }
-                    }
-                }
-            }
-        });
-    }
-}
-
 function runSimulation() {
     // Get input values
     let n = parseInt(document.getElementById("numComponents").value);
@@ -282,7 +174,9 @@ function runSimulation() {
     // Generate DSM matrix based on the selected method
     const DSM = generateDSMFromMethod(n, d, method);
 
-    // Render the DSM matrix
+    // Clear and re-render the DSM matrix
+    const container = document.getElementById("dsmContainer");
+    container.innerHTML = ""; // Clear existing DSM
     renderDSM(DSM);
 
     // Simulate cost evolution using the generated DSM
@@ -299,17 +193,120 @@ function runSimulation() {
     const adjustedSimulatedCosts = simulatedCosts.map(c => Math.max(c, 1e-6));
     const adjustedCAve = resampledCAve.map(c => Math.max(c, 1e-6));
 
-    // Debugging: Log data lengths and values
-    console.log("Simulated Costs Length:", adjustedSimulatedCosts.length);
-    console.log("Resampled tPlot Length:", resampledTPlot.length);
-    console.log("Resampled cAve Length:", adjustedCAve.length);
-
     // Update the graph with both simulated and theoretical results
     updateChart(resampledTPlot, adjustedSimulatedCosts, adjustedCAve);
 }
 
-// Attach the runSimulation function to the "Run Simulation" button
-document.getElementById("runSimulationButton").addEventListener("click", runSimulation);
+function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
+    const canvas = document.getElementById("costChart");
+    const ctx = canvas.getContext("2d");
+
+    // Fix the graph size
+    canvas.style.width = "100%";
+    canvas.style.height = "400px"; // Fixed height
+
+    // Ensure data alignment
+    if (tPlot.length !== simulatedCosts.length || tPlot.length !== theoreticalCosts.length) {
+        console.error("Data length mismatch:", {
+            tPlot: tPlot.length,
+            simulatedCosts: simulatedCosts.length,
+            theoreticalCosts: theoreticalCosts.length
+        });
+        return;
+    }
+
+    // Destroy the existing chart instance if it exists
+    if (costChart) {
+        costChart.destroy();
+    }
+
+    // Create a new chart instance
+    costChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: tPlot,
+            datasets: [
+                {
+                    label: 'Simulated Cost Evolution',
+                    data: simulatedCosts,
+                    borderColor: '#A31F34', // MIT red
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0, // No points for a cleaner logarithmic graph
+                },
+                {
+                    label: 'Theoretical Cost Evolution',
+                    data: theoreticalCosts,
+                    borderColor: '#FFA500', // Orange for theoretical curve
+                    borderWidth: 2,
+                    fill: false,
+                    borderDash: [5, 5] // Dashed line for theoretical curve
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false, // Allow dynamic height adjustment
+            animation: {
+                duration: 500, // Smooth animation for updates
+                easing: 'easeOutCubic'
+            },
+            plugins: {
+                tooltip: {
+                    enabled: true,
+                    callbacks: {
+                        label: function(context) {
+                            return `Cost: ${context.raw.toExponential(2)}`; // Show values in exponential format
+                        }
+                    }
+                },
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                x: {
+                    type: 'logarithmic', // Logarithmic scale for x-axis
+                    title: {
+                        display: true,
+                        text: '# of Improvement Attempts'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return `10^${Math.log10(value).toFixed(0)}`; // Show exponential values
+                        }
+                    },
+                    grid: {
+                        display: true,
+                        color: '#e0e0e0'
+                    }
+                },
+                y: {
+                    type: 'logarithmic', // Logarithmic scale for y-axis
+                    title: {
+                        display: true,
+                        text: 'Cost'
+                    },
+                    ticks: {
+                        callback: function(value, index, values) {
+                            // Ensure all labels are unique powers of ten
+                            const logValue = Math.log10(value).toFixed(0);
+                            if (index === 0 || value !== values[index - 1]?.value) {
+                                return `10^${logValue}`;
+                            }
+                            return null; // Skip repeated labels
+                        }
+                    },
+                    grid: {
+                        display: true,
+                        color: '#e0e0e0'
+                    }
+                }
+            }
+        }
+    });
+}
 
 function sampleLogarithmically(data, numSamples) {
     const sampled = [];
