@@ -204,11 +204,17 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
     // Adjust canvas height for better readability
     canvas.style.height = "500px"; // Set a higher fixed height
 
+    // Dynamically adjust line width and point radius based on DSM size
+    const lineWidth = Math.max(2, Math.min(6, 120 / simulatedCosts.length)); // Slightly thicker lines
+    const pointRadius = Math.max(2, Math.min(4, 60 / simulatedCosts.length)); // Retain visible points
+
     // If the chart already exists, update its data
     if (costChart) {
         costChart.data.labels = tPlot;
         costChart.data.datasets[0].data = simulatedCosts;
         costChart.data.datasets[1].data = theoreticalCosts;
+        costChart.options.elements.line.borderWidth = lineWidth;
+        costChart.options.elements.point.radius = pointRadius;
         costChart.update(); // Smoothly update the chart
         return;
     }
@@ -223,15 +229,15 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
                     label: 'Simulated Cost Evolution',
                     data: simulatedCosts,
                     borderColor: '#A31F34', // MIT red
-                    borderWidth: 2,
+                    borderWidth: lineWidth,
                     fill: false,
-                    pointRadius: 0, // No points for a cleaner logarithmic graph
+                    pointRadius: pointRadius, // Dynamically set point radius
                 },
                 {
                     label: 'Theoretical Cost Evolution',
                     data: theoreticalCosts,
                     borderColor: '#FFA500', // Orange for theoretical curve
-                    borderWidth: 2,
+                    borderWidth: lineWidth,
                     fill: false,
                     borderDash: [5, 5] // Dashed line for theoretical curve
                 }
@@ -295,6 +301,14 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
                         display: true,
                         color: '#e0e0e0'
                     }
+                }
+            },
+            elements: {
+                line: {
+                    borderWidth: lineWidth // Dynamically set line width
+                },
+                point: {
+                    radius: pointRadius // Dynamically set point radius
                 }
             }
         }
