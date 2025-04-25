@@ -201,26 +201,16 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
     const canvas = document.getElementById("costChart");
     const ctx = canvas.getContext("2d");
 
-    // Fix the graph size
-    canvas.style.width = "100%";
-    canvas.style.height = "400px"; // Fixed height
-
-    // Ensure data alignment
-    if (tPlot.length !== simulatedCosts.length || tPlot.length !== theoreticalCosts.length) {
-        console.error("Data length mismatch:", {
-            tPlot: tPlot.length,
-            simulatedCosts: simulatedCosts.length,
-            theoreticalCosts: theoreticalCosts.length
-        });
+    // If the chart already exists, update its data
+    if (costChart) {
+        costChart.data.labels = tPlot;
+        costChart.data.datasets[0].data = simulatedCosts;
+        costChart.data.datasets[1].data = theoreticalCosts;
+        costChart.update(); // Smoothly update the chart
         return;
     }
 
-    // Destroy the existing chart instance if it exists
-    if (costChart) {
-        costChart.destroy();
-    }
-
-    // Create a new chart instance
+    // Create a new chart instance if it doesn't exist
     costChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -246,7 +236,7 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false, // Allow dynamic height adjustment
+            maintainAspectRatio: false,
             animation: {
                 duration: 500, // Smooth animation for updates
                 easing: 'easeOutCubic'
@@ -267,14 +257,14 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
             },
             scales: {
                 x: {
-                    type: 'logarithmic', // Logarithmic scale for x-axis
+                    type: 'logarithmic',
                     title: {
                         display: true,
                         text: '# of Improvement Attempts'
                     },
                     ticks: {
                         callback: function(value) {
-                            return `10^${Math.log10(value).toFixed(0)}`; // Show exponential values
+                            return `10^${Math.log10(value).toFixed(0)}`;
                         }
                     },
                     grid: {
@@ -283,19 +273,19 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
                     }
                 },
                 y: {
-                    type: 'logarithmic', // Logarithmic scale for y-axis
+                    type: 'logarithmic',
                     title: {
                         display: true,
                         text: 'Cost'
                     },
                     ticks: {
-                        callback: function(value, index, values) {
-                            // Ensure all labels are unique powers of ten
-                            const logValue = Math.log10(value).toFixed(0);
-                            if (index === 0 || value !== values[index - 1]?.value) {
+                        callback: function(value) {
+                            // Only show unique powers of ten
+                            const logValue = Math.log10(value);
+                            if (Number.isInteger(logValue)) {
                                 return `10^${logValue}`;
                             }
-                            return null; // Skip repeated labels
+                            return null; // Skip non-integer powers of ten
                         }
                     },
                     grid: {
