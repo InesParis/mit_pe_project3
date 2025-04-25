@@ -201,6 +201,9 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
     const canvas = document.getElementById("costChart");
     const ctx = canvas.getContext("2d");
 
+    // Adjust canvas height for better readability
+    canvas.style.height = "500px"; // Set a higher fixed height
+
     // If the chart already exists, update its data
     if (costChart) {
         costChart.data.labels = tPlot;
