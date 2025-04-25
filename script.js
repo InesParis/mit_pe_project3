@@ -182,7 +182,7 @@ function runSimulation() {
     // Simulate cost evolution using the generated DSM
     const simulatedCosts = simulateCostEvolution(DSM, n, d, 1000);
 
-    // Compute theoretical cost evolution
+    // Compute theoretical cost evolution dynamically based on the new DSM
     const { tPlot, cAve } = computeTheoreticalCostEvolution(n, d, 1000);
 
     // Resample tPlot and cAve to match the length of simulatedCosts
