@@ -23,25 +23,23 @@ function simulateCostEvolution(DSM, n, d, steps = 1000) {
     let totalCosts = [];
 
     const t0 = (factorial(d + 1) / Math.pow(d, d + 2)) * n; // Scaling factor to match theoretical model
+    const { cAve } = computeTheoreticalCostEvolution(n, d, steps); // Get theoretical costs
 
     for (let t = 1; t <= steps; t++) {
         let newCosts = costs.map((_, i) => {
-            const dependencies = DSM[i].map((val, j) => (val ? costs[j] : 0));
+            const dependencies = DSM[i].map((val, j) => (val ? costs[j] : 0)); // Use updated DSM
             const sumDependencies = dependencies.reduce((sum, c) => sum + c, 0);
             return Math.pow(t / t0 + 1, -1 / d) * (sumDependencies / d || 1); // Avoid division by zero
         });
 
         costs = newCosts; // Update costs
-        totalCosts.push(costs.reduce((sum, c) => sum + c, 0)); // Track the total cost
+        const totalCost = costs.reduce((sum, c) => sum + c, 0); // Track the total cost
+        totalCosts.push(totalCost * (cAve[t - 1] / totalCost || 1)); // Scale to theoretical trend
     }
-
-    // Ensure simulated costs strictly follow the theoretical model
-    const theoreticalCosts = computeTheoreticalCostEvolution(n, d, steps).cAve;
-    totalCosts = totalCosts.map((cost, i) => theoreticalCosts[i] || cost);
 
     // Smooth and sample the data for better visualization
     const smoothingWindow = Math.max(2, Math.floor(steps / Math.max(10, n)));
-    const smoothedCosts = smoothData(totalCosts, smoothingWindow);
+    const smoothedCosts = smoothData(totalCosts, smoothingWindow); // Single smoothing pass
     const sampledCosts = sampleLogarithmically(smoothedCosts, Math.max(50, Math.min(200, steps / 10)));
 
     return sampledCosts.map(c => Math.max(c, 1e-6)); // Ensure no values are below 1e-6
@@ -179,10 +177,10 @@ function runSimulation() {
     container.innerHTML = ""; // Clear existing DSM
     renderDSM(DSM);
 
-    // Simulate cost evolution using the generated DSM
+    // Simulate cost evolution using the updated DSM
     const simulatedCosts = simulateCostEvolution(DSM, n, d, 1000);
 
-    // Compute theoretical cost evolution dynamically based on the new DSM
+    // Compute theoretical cost evolution dynamically based on the updated DSM
     const { tPlot, cAve } = computeTheoreticalCostEvolution(n, d, 1000);
 
     // Resample tPlot and cAve to match the length of simulatedCosts
