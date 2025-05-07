@@ -89,7 +89,11 @@ h2 {
 }
 
 .graph-section {
-  width: 60%; /* Allocate 60% of the width for the graph */
+  width: 70%; /* Increase the width allocated to the graph */
+  height: 500px; /* Set a fixed height for better readability */
+  display: flex;
+  justify-content: center; /* Center the graph horizontally */
+  align-items: center; /* Center the graph vertically */
 }
 
 .dsm-section table td.one {
@@ -116,6 +120,17 @@ canvas {
   height: auto; /* Maintain aspect ratio */
 }
 
+canvas#costChart {
+  width: 100%;
+  height: 100%;
+  max-width: 800px; /* Increase the maximum width of the graph */
+  max-height: 500px; /* Increase the maximum height of the graph */
+  border: 1px solid var(--mit-light-gray); /* Add a subtle border for polish */
+  border-radius: 8px; /* Rounded corners for a clean look */
+  background-color: var(--white); /* Ensure a clean white background */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a subtle shadow for depth */
+}
+
 /* Media Queries for Responsiveness */
 
 /* For tablets and smaller screens */
@@ -135,7 +150,13 @@ canvas {
   }
 
   .graph-section {
-    height: 450px; /* Adjust graph height for smaller screens */
+    width: 100%; /* Allow the graph to take full width on smaller screens */
+    height: 400px; /* Adjust height for smaller screens */
+  }
+
+  canvas#costChart {
+    max-width: 600px; /* Adjust graph size for smaller screens */
+    max-height: 400px;
   }
 
   td {
@@ -158,7 +179,12 @@ canvas {
   }
 
   .graph-section {
-    height: 350px; /* Further reduce graph height */
+    height: 350px; /* Further reduce graph height for mobile */
+  }
+
+  canvas#costChart {
+    max-width: 300px; /* Further reduce graph size for mobile */
+    max-height: 300px;
   }
 
   td {
