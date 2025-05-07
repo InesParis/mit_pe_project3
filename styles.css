@@ -1,171 +1,173 @@
 :root {
-    --mit-red: #a31f34;
-    --mit-gray: #8a8b8c;
-    --mit-light-gray: #d3d3d4;
-    --white: #ffffff;
+  --mit-red: #a31f34;
+  --mit-gray: #8a8b8c;
+  --mit-light-gray: #d3d3d4;
+  --white: #ffffff;
 }
 
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: #f0f0f0;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f0f0;
 }
 
 .container {
-    text-align: center;
-    max-width: 1600px; /* Adjust max width for better balance */
-    margin: 40px auto; /* Add more vertical spacing */
-    padding: 20px;
-    box-sizing: border-box;
+  text-align: center;
+  max-width: 1600px; /* Adjust max width for better balance */
+  margin: 40px auto; /* Add more vertical spacing */
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 h1 {
-    color: #A31F34; /* MIT red */
-    font-size: 2.5rem;
-    margin-bottom: 40px; /* Add more spacing below the title */
+  color: #a31f34; /* MIT red */
+  font-size: 2.5rem;
+  margin-bottom: 40px; /* Add more spacing below the title */
 }
 h2 {
-     color: #A31F34; /* MIT red */
-    }
+  color: #a31f34; /* MIT red */
+}
 .controls {
-    margin-bottom: 40px; /* Add more spacing below controls */
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 20px; /* Increase spacing between controls */
+  margin-bottom: 40px; /* Add more spacing below controls */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px; /* Increase spacing between controls */
 }
 
 .list-controls {
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-    list-style: none;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  list-style: none;
 }
 
 .controls label,
 .controls input,
 .controls select,
 .controls button {
-    margin: 5px;
-    font-size: 1.1rem;
+  margin: 5px;
+  font-size: 1.1rem;
 }
 
 .controls button {
-    padding: 12px 25px;
-    background-color: #A31F34; /* MIT red */
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+  padding: 12px 25px;
+  background-color: #a31f34; /* MIT red */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
 
 .controls button:hover {
-    background-color: #8a1a2b; /* Darker red for hover effect */
+  background-color: #8a1a2b; /* Darker red for hover effect */
 }
 
 .output {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 }
 
 .horizontal-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 20px; /* Space between DSM and graph */
-    margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px; /* Space between DSM and graph */
+  margin-top: 20px;
 }
 
 .dsm-section {
-    width: 35%; /* Allocate 35% of the width for DSM */
-    text-align: center;
+  width: 35%; /* Allocate 35% of the width for DSM */
+  text-align: center;
 }
 
 .graph-section {
-    width: 60%; /* Allocate 60% of the width for the graph */
+  width: 60%; /* Allocate 60% of the width for the graph */
 }
 
 .dsm-section table td.one {
-    background-color: #A31F34; /* MIT red for 'one' */
+  background-color: #a31f34; /* MIT red for 'one' */
+  border: 2px solid #8a1a2b; /* Darker red border for emphasis */
 }
 
 .dsm-section table td.zero {
-    background-color: #f0f0f0; /* Light gray for 'zero' */
+  background-color: #f0f0f0; /* Light gray for 'zero' */
+  border: 1px solid #d3d3d4; /* Slightly darker gray border */
 }
 
 .dsm-section table {
-    border-collapse: collapse;
-    margin: auto; /* Center the DSM horizontally */
+  border-collapse: collapse;
+  margin: auto; /* Center the DSM horizontally */
 }
 
 .dsm-section table td {
-    border: 1px solid #ccc; /* Light border for clarity */
+  border: 1px solid #ccc; /* Light border for clarity */
 }
 
 canvas {
-    max-width: 100%; /* Ensure the graph scales properly */
-    height: auto; /* Maintain aspect ratio */
+  max-width: 100%; /* Ensure the graph scales properly */
+  height: auto; /* Maintain aspect ratio */
 }
 
 /* Media Queries for Responsiveness */
 
 /* For tablets and smaller screens */
 @media (max-width: 1024px) {
-    h1 {
-        font-size: 2rem;
-    }
+  h1 {
+    font-size: 2rem;
+  }
 
-    .controls {
-        flex-direction: column;
-        align-items: center;
-    }
+  .controls {
+    flex-direction: column;
+    align-items: center;
+  }
 
-    .dsm-and-graph {
-        flex-direction: column; /* Stack DSM and graph vertically */
-        align-items: center;
-    }
+  .dsm-and-graph {
+    flex-direction: column; /* Stack DSM and graph vertically */
+    align-items: center;
+  }
 
-    .graph-section {
-        height: 450px; /* Adjust graph height for smaller screens */
-    }
+  .graph-section {
+    height: 450px; /* Adjust graph height for smaller screens */
+  }
 
-    td {
-        width: 20px; /* Adjust DSM cell size */
-        height: 20px;
-    }
+  td {
+    width: 20px; /* Adjust DSM cell size */
+    height: 20px;
+  }
 }
 
 /* For mobile screens */
 @media (max-width: 480px) {
-    h1 {
-        font-size: 1.5rem;
-    }
+  h1 {
+    font-size: 1.5rem;
+  }
 
-    .controls label,
-    .controls input,
-    .controls select,
-    .controls button {
-        font-size: 1rem;
-    }
+  .controls label,
+  .controls input,
+  .controls select,
+  .controls button {
+    font-size: 1rem;
+  }
 
-    .graph-section {
-        height: 350px; /* Further reduce graph height */
-    }
+  .graph-section {
+    height: 350px; /* Further reduce graph height */
+  }
 
-    td {
-        width: 15px; /* Reduce DSM cell size */
-        height: 15px;
-    }
+  td {
+    width: 15px; /* Reduce DSM cell size */
+    height: 15px;
+  }
 }
 
 #costChart {
-    width: 100%; /* Take full width of the container */
-    height: 100%; /* Allow height to be controlled by the container */
+  width: 100%; /* Take full width of the container */
+  height: 100%; /* Allow height to be controlled by the container */
 }
