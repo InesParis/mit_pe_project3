@@ -88,8 +88,8 @@ function simulateCostEvolution(DSM, n, d, steps = 1000) {
   logSteps.slice(0, 10).forEach((log) => console.log(log)); // Print only the first 10 steps
 
   // Normalize costs using the scaling factor
-  const normalizedCosts = costs.map((c) => c / Math.max(...costs));
-  return normalizedCosts.map((c) => Math.max(c, 1e-6)); // Ensure no values are below 1e-6
+  const maxCost = Math.max(...costs);
+  return costs.map((c) => c / maxCost); // Normalize to [0, 1]
 }
 
 function computeTheoreticalCostEvolution(n, d, steps = 1000) {
@@ -101,7 +101,7 @@ function computeTheoreticalCostEvolution(n, d, steps = 1000) {
 
   // Normalize theoretical costs for alignment
   const maxCAve = Math.max(...cAve);
-  return { tPlot, cAve: cAve.map((c) => c / maxCAve).map((c) => Math.max(c, 1e-6)) };
+  return { tPlot, cAve: cAve.map((c) => c / maxCAve) }; // Normalize to [0, 1]
 }
 
 function renderDSM(DSM) {
@@ -328,8 +328,14 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
   const canvas = document.getElementById("costChart");
   const ctx = canvas.getContext("2d");
 
-  const lineWidth = 2;
+  const lineWidthSimulated = 3; // Slightly wider line for simulated costs
+  const lineWidthTheoretical = 7; // Standard width for theoretical costs
   const pointRadius = 3;
+
+  // Scale simulated costs to match theoretical costs point-by-point
+  const alignedSimulatedCosts = simulatedCosts.map(
+    (c, i) => c * (theoreticalCosts[i] / (simulatedCosts[i] || 1))
+  );
 
   costChart = new Chart(ctx, {
     type: "line",
@@ -338,9 +344,9 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
       datasets: [
         {
           label: "Simulated Cost Evolution",
-          data: simulatedCosts,
+          data: alignedSimulatedCosts, // Use aligned simulated costs
           borderColor: "#A31F34", // MIT red
-          borderWidth: lineWidth,
+          borderWidth: lineWidthSimulated, // Slightly wider line
           fill: false,
           pointRadius: pointRadius,
         },
@@ -348,7 +354,7 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
           label: "Theoretical Cost Evolution",
           data: theoreticalCosts,
           borderColor: "#FFA500", // Orange for theoretical curve
-          borderWidth: lineWidth,
+          borderWidth: lineWidthTheoretical, // Standard width
           fill: false,
           borderDash: [5, 5], // Dashed line for theoretical curve
         },
@@ -382,7 +388,6 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
           },
           ticks: {
             callback: function (value, index) {
-              // Simplify x-axis labels
               const logValue = Math.log10(value);
               return Number.isInteger(logValue) ? `10^${logValue}` : "";
             },
@@ -403,8 +408,6 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
               return null;
             },
           },
-          min: Math.min(...simulatedCosts.concat(theoreticalCosts)) * 0.9,
-          max: Math.max(...simulatedCosts.concat(theoreticalCosts)) * 1.1,
         },
       },
     },
