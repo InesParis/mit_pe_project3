@@ -84,8 +84,11 @@ h2 {
 }
 
 .dsm-section {
-  width: 35%; /* Allocate 35% of the width for DSM */
-  text-align: center;
+  width: 60%; /* Increased width for better readability */
+  height: 600px; /* Increased height for better readability */
+  display: flex;
+  justify-content: center; /* Center the DSM horizontally */
+  align-items: center; /* Center the DSM vertically */
 }
 
 .graph-section {
@@ -96,6 +99,20 @@ h2 {
   align-items: center; /* Center the graph vertically */
 }
 
+.dsm-section table {
+  width: 100%; /* Allow the DSM to scale dynamically */
+  max-width: 600px; /* Increase the maximum width of the DSM */
+  max-height: 500px; /* Increase the maximum height of the DSM */
+  border-collapse: collapse;
+  margin: auto; /* Center the DSM horizontally */
+}
+
+.dsm-section table td {
+  width: 35px; /* Increased cell size */
+  height: 35px;
+  border: 1px solid #ccc; /* Light border for clarity */
+}
+
 .dsm-section table td.one {
   background-color: #a31f34; /* MIT red for 'one' */
   border: 2px solid #8a1a2b; /* Darker red border for emphasis */
@@ -104,15 +121,6 @@ h2 {
 .dsm-section table td.zero {
   background-color: #f0f0f0; /* Light gray for 'zero' */
   border: 1px solid #d3d3d4; /* Slightly darker gray border */
-}
-
-.dsm-section table {
-  border-collapse: collapse;
-  margin: auto; /* Center the DSM horizontally */
-}
-
-.dsm-section table td {
-  border: 1px solid #ccc; /* Light border for clarity */
 }
 
 canvas {
@@ -149,6 +157,11 @@ canvas#costChart {
     align-items: center;
   }
 
+  .dsm-section {
+    width: 100%; /* Allow the DSM to take full width on smaller screens */
+    height: 400px; /* Adjust height for smaller screens */
+  }
+
   .graph-section {
     width: 100%; /* Allow the graph to take full width on smaller screens */
     height: 400px; /* Adjust height for smaller screens */
@@ -161,6 +174,11 @@ canvas#costChart {
 
   td {
     width: 20px; /* Adjust DSM cell size */
+    height: 20px;
+  }
+
+  .dsm-section table td {
+    width: 20px; /* Adjust DSM cell size for smaller screens */
     height: 20px;
   }
 }
@@ -188,8 +206,17 @@ canvas#costChart {
   }
 
   td {
-    width: 15px; /* Reduce DSM cell size */
-    height: 15px;
+    width: 20px; /* Adjusted DSM cell size for mobile */
+    height: 20px;
+  }
+
+  .dsm-section {
+    height: 400px; /* Adjusted height for mobile */
+  }
+
+  .dsm-section table td {
+    width: 20px; /* Adjusted cell size for mobile */
+    height: 20px;
   }
 }
 

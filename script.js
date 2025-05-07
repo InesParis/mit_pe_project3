@@ -1,3 +1,24 @@
+function computeDesignComplexity(dsm) {
+  const n = dsm.length;
+
+  function dfs(i, visited) {
+    if (visited.has(i)) return;
+    visited.add(i);
+    for (let j = 0; j < n; j++) {
+      if (dsm[i][j] === 1) dfs(j, visited);
+    }
+  }
+
+  let maxDependencies = 0;
+  for (let i = 0; i < n; i++) {
+    const visited = new Set();
+    dfs(i, visited);
+    maxDependencies = Math.max(maxDependencies, visited.size);
+  }
+
+  return maxDependencies;
+}
+
 function generateDSM(n, d) {
   let DSM = Array.from({ length: n }, () => Array(n).fill(0));
 
@@ -20,72 +41,67 @@ function generateDSM(n, d) {
   return DSM;
 }
 
-function simulateCostEvolution(DSM, n, d, steps = 10) {
+function simulateCostEvolution(DSM, n, d, steps = 1000) {
   let costs = Array(n).fill(1); // Initial costs set to 1
-  const logSteps = []; // Array to store logs for each step
+  const logSteps = [];
+  const timeFactor = (factorial(d + 1) / Math.pow(d, d + 2)) * n; // Scaling factor for alignment
 
   for (let t = 1; t <= steps; t++) {
-    // Randomly select a component to improve
     const selectedComponent = Math.floor(Math.random() * n);
-
-    // Calculate the cost improvement for the selected component
     const dependencies = DSM[selectedComponent].map((val, j) =>
       val ? costs[j] : 0
     );
     const sumDependencies = dependencies.reduce((sum, c) => sum + c, 0);
-    const newCost = sumDependencies / d || 1; // Avoid division by zero
+    const newCost = sumDependencies / d || 1;
 
-    // Check if the new cost is cheaper
-    if (newCost < costs[selectedComponent]) {
-      // Update the cost of the selected component
-      costs[selectedComponent] = newCost;
+    const adjustedNewCost = newCost * (1 - Math.random() * 0.05);
+
+    if (adjustedNewCost < costs[selectedComponent]) {
+      costs[selectedComponent] = adjustedNewCost;
 
       // Propagate changes to dependent components
       const affectedComponents = [];
       DSM.forEach((row, i) => {
         if (row[selectedComponent] === 1 && i !== selectedComponent) {
-          costs[i] = Math.min(costs[i], newCost); // Update cost if cheaper
-          affectedComponents.push(i);
+          if (costs[i] > adjustedNewCost) {
+            costs[i] = adjustedNewCost;
+            affectedComponents.push(i + 1); // Log affected components (1-based index)
+          }
         }
       });
 
-      // Log the step
       logSteps.push(
-        `Step ${t}: Selected component ${selectedComponent + 1}, updated cost to ${newCost.toFixed(
-          2
-        )}. Affected components: ${affectedComponents
-          .map((c) => c + 1)
-          .join(", ")}`
+        `Step ${t}: Selected component ${selectedComponent + 1}, updated cost to ${adjustedNewCost.toFixed(
+          4
+        )}. Affected components: ${affectedComponents.join(", ")}`
       );
     } else {
-      // Log the step if no improvement was made
+      costs[selectedComponent] *= 0.99;
       logSteps.push(
-        `Step ${t}: Selected component ${selectedComponent + 1}, no improvement.`
+        `Step ${t}: Selected component ${selectedComponent + 1}, forced slight improvement.`
       );
     }
   }
 
-  // Print the log steps
+  // Log simulation details to the console
   console.log("Simulation Steps:");
-  logSteps.forEach((log) => console.log(log));
+  logSteps.slice(0, 10).forEach((log) => console.log(log)); // Print only the first 10 steps
 
-  // Display a message on the page
-  const loadingIndicator = document.getElementById("loadingIndicator");
-  loadingIndicator.style.display = "block";
-  loadingIndicator.innerHTML =
-    "Simulation complete. Please check the console (Inspect > Console) for detailed information.";
-
-  return costs; // Return the final costs for reference
+  // Normalize costs using the scaling factor
+  const normalizedCosts = costs.map((c) => c / Math.max(...costs));
+  return normalizedCosts.map((c) => Math.max(c, 1e-6)); // Ensure no values are below 1e-6
 }
 
 function computeTheoreticalCostEvolution(n, d, steps = 1000) {
   const tPlot = Array.from({ length: steps }, (_, i) =>
     Math.pow(10, i / (steps / 50))
-  ); // Logarithmic time steps
-  const t0 = (factorial(d + 1) / Math.pow(d, d + 2)) * n; // Scaling factor
-  const cAve = tPlot.map((t) => Math.pow(t / t0 + 1, -1 / d)); // Theoretical cost evolution
+  );
+  const t0 = (factorial(d + 1) / Math.pow(d, d + 2)) * n;
+  const cAve = tPlot.map((t) => Math.pow(t / t0 + 1, -1 / d));
 
-  return { tPlot, cAve: cAve.map((c) => Math.max(c, 1e-6)) }; // Ensure no values are below 1e-6
+  // Normalize theoretical costs for alignment
+  const maxCAve = Math.max(...cAve);
+  return { tPlot, cAve: cAve.map((c) => c / maxCAve).map((c) => Math.max(c, 1e-6)) };
 }
 
 function renderDSM(DSM) {
@@ -124,43 +140,37 @@ function renderDSM(DSM) {
 }
 
 function updateGraphOnDSMChange(DSM) {
-  // Get the current number of components
   const n = DSM.length;
-
-  // Recalculate the average connectivity (d) dynamically
   const d =
-    DSM.reduce((sum, row) => sum + row.filter((val) => val === 1).length, 0) /
-    n;
+    DSM.reduce((sum, row) => sum + row.filter((val) => val === 1).length, 0) / n;
 
-  // Simulate cost evolution using the updated DSM
   const simulatedCosts = simulateCostEvolution(DSM, n, d, 1000);
-
-  // Compute theoretical cost evolution dynamically based on the updated DSM
   const { tPlot, cAve } = computeTheoreticalCostEvolution(n, d, 1000);
 
-  // Resample tPlot and cAve to match the length of simulatedCosts
   const resampledTPlot = sampleLogarithmically(tPlot, simulatedCosts.length);
   const resampledCAve = sampleLogarithmically(cAve, simulatedCosts.length);
 
-  // Ensure all data points are strictly positive
   const adjustedSimulatedCosts = simulatedCosts.map((c) => Math.max(c, 1e-6));
   const adjustedCAve = resampledCAve.map((c) => Math.max(c, 1e-6));
 
-  // Update the existing chart dynamically without destroying it
-  if (costChart) {
-    costChart.data.labels = resampledTPlot; // Update x-axis labels
-    costChart.data.datasets[0].data = adjustedSimulatedCosts; // Update simulated costs
-    costChart.data.datasets[1].data = adjustedCAve; // Update theoretical costs
+  // Display a message on the page
+  const loadingIndicator = document.getElementById("loadingIndicator");
+  loadingIndicator.style.display = "block";
+  loadingIndicator.innerHTML =
+    "Simulation complete. Please check the console (Inspect > Console) for detailed information about the selected component and updated costs.";
 
-    // Dynamically adjust the y-axis scale to ensure both lines are visible
+  if (costChart) {
+    costChart.data.labels = resampledTPlot;
+    costChart.data.datasets[0].data = adjustedSimulatedCosts;
+    costChart.data.datasets[1].data = adjustedCAve;
+
     costChart.options.scales.y.min =
       Math.min(...adjustedSimulatedCosts.concat(adjustedCAve)) * 0.9;
     costChart.options.scales.y.max =
       Math.max(...adjustedSimulatedCosts.concat(adjustedCAve)) * 1.1;
 
-    costChart.update(); // Apply the changes to the chart
+    costChart.update();
   } else {
-    // If the chart doesn't exist, create it
     updateChart(resampledTPlot, adjustedSimulatedCosts, adjustedCAve);
   }
 }
@@ -298,11 +308,9 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
   const canvas = document.getElementById("costChart");
   const ctx = canvas.getContext("2d");
 
-  // Dynamically adjust line width and point radius for better readability
-  const lineWidth = 2; // Thinner lines for a cleaner look
-  const pointRadius = 3; // Smaller points for better visibility
+  const lineWidth = 2;
+  const pointRadius = 3;
 
-  // Create a new chart instance
   costChart = new Chart(ctx, {
     type: "line",
     data: {
@@ -330,27 +338,19 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
       responsive: true,
       maintainAspectRatio: false,
       animation: {
-        duration: 800, // Smooth animation for updates
-        easing: "easeInOutQuad", // Elegant easing for transitions
+        duration: 800,
+        easing: "easeInOutQuad",
       },
       plugins: {
         tooltip: {
-          enabled: true,
           callbacks: {
             label: function (context) {
-              return `Cost: ${context.raw.toExponential(2)}`; // Show values in exponential format
+              return `Cost: ${context.raw.toExponential(2)}`;
             },
           },
         },
         legend: {
-          display: true,
           position: "top",
-          labels: {
-            font: {
-              size: 14, // Slightly larger font for readability
-              family: "Arial, sans-serif", // Clean font
-            },
-          },
         },
       },
       scales: {
@@ -359,22 +359,13 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
           title: {
             display: true,
             text: "# of Improvement Attempts",
-            font: {
-              size: 16, // Larger font for axis title
-              family: "Arial, sans-serif",
-            },
           },
           ticks: {
-            callback: function (value) {
-              return `10^${Math.log10(value).toFixed(0)}`;
+            callback: function (value, index) {
+              // Simplify x-axis labels
+              const logValue = Math.log10(value);
+              return Number.isInteger(logValue) ? `10^${logValue}` : "";
             },
-            font: {
-              size: 12, // Clean font size for ticks
-            },
-          },
-          grid: {
-            display: true,
-            color: "#e0e0e0", // Subtle grid lines
           },
         },
         y: {
@@ -382,10 +373,6 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
           title: {
             display: true,
             text: "Cost",
-            font: {
-              size: 16, // Larger font for axis title
-              family: "Arial, sans-serif",
-            },
           },
           ticks: {
             callback: function (value) {
@@ -393,32 +380,18 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
               if (Number.isInteger(logValue)) {
                 return `10^${logValue}`;
               }
-              return null; // Skip non-integer powers of ten
-            },
-            font: {
-              size: 12, // Clean font size for ticks
+              return null;
             },
           },
-          grid: {
-            display: true,
-            color: "#e0e0e0", // Subtle grid lines
-          },
-          min: Math.min(...simulatedCosts.concat(theoreticalCosts)) * 0.9, // Dynamically adjust min
-          max: Math.max(...simulatedCosts.concat(theoreticalCosts)) * 1.1, // Dynamically adjust max
-        },
-      },
-      elements: {
-        line: {
-          borderWidth: lineWidth, // Thinner lines
-        },
-        point: {
-          radius: pointRadius, // Smaller points
+          min: Math.min(...simulatedCosts.concat(theoreticalCosts)) * 0.9,
+          max: Math.max(...simulatedCosts.concat(theoreticalCosts)) * 1.1,
         },
       },
     },
   });
 }
 
+// Logarithmic sampling function
 function sampleLogarithmically(data, numSamples) {
   const sampled = [];
   const maxIndex = data.length - 1;
@@ -429,16 +402,4 @@ function sampleLogarithmically(data, numSamples) {
   }
 
   return sampled;
-}
-
-function smoothData(data, windowSize) {
-  const smoothed = [];
-  for (let i = 0; i < data.length; i++) {
-    const start = Math.max(0, i - windowSize);
-    const end = Math.min(data.length, i + windowSize + 1);
-    const window = data.slice(start, end);
-    const average = window.reduce((sum, val) => sum + val, 0) / window.length;
-    smoothed.push(average);
-  }
-  return smoothed;
 }
