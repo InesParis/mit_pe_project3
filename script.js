@@ -153,11 +153,15 @@ function updateGraphOnDSMChange(DSM) {
   const adjustedSimulatedCosts = simulatedCosts.map((c) => Math.max(c, 1e-6));
   const adjustedCAve = resampledCAve.map((c) => Math.max(c, 1e-6));
 
-  // Display a message on the page
+  // Ensure the loadingIndicator message is displayed
   const loadingIndicator = document.getElementById("loadingIndicator");
-  loadingIndicator.style.display = "block";
-  loadingIndicator.innerHTML =
-    "Simulation complete. Please check the console (Inspect > Console) for detailed information about the selected component and updated costs.";
+  if (loadingIndicator) {
+    loadingIndicator.style.display = "block"; // Make the message visible
+    loadingIndicator.innerHTML =
+      "Simulation complete. Please check the console (Inspect > Console) for detailed information about the selected components, affected components, and updated costs.";
+  } else {
+    console.error("Element with id 'loadingIndicator' not found in the DOM.");
+  }
 
   if (costChart) {
     costChart.data.labels = resampledTPlot;
@@ -272,6 +276,16 @@ function runSimulation() {
     d = n - 1;
   }
 
+  // Display a message indicating the simulation is running
+  const loadingIndicator = document.getElementById("loadingIndicator");
+  if (loadingIndicator) {
+    loadingIndicator.style.display = "block";
+    loadingIndicator.innerHTML =
+      "Running simulation... Please wait. Once complete, check the console (Inspect > Console) for detailed results.";
+  } else {
+    console.error("Element with id 'loadingIndicator' not found in the DOM.");
+  }
+
   // Generate DSM matrix based on the selected method
   const DSM = generateDSMFromMethod(n, d, method);
 
@@ -302,6 +316,12 @@ function runSimulation() {
 
   // Update the graph with both simulated and theoretical results
   updateChart(resampledTPlot, adjustedSimulatedCosts, adjustedCAve);
+
+  // Update the message to indicate the simulation is complete
+  if (loadingIndicator) {
+    loadingIndicator.innerHTML =
+      "Simulation complete. Please check the console (Inspect > Console) for detailed information about the selected components, affected components, and updated costs.";
+  }
 }
 
 function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
