@@ -88,8 +88,8 @@ function simulateCostEvolution(DSM, n, d, steps = 1000) {
   logSteps.slice(0, 10).forEach((log) => console.log(log)); // Print only the first 10 steps
 
   // Normalize costs using the scaling factor
-  const normalizedCosts = costs.map((c) => c / Math.max(...costs));
-  return normalizedCosts.map((c) => Math.max(c, 1e-6)); // Ensure no values are below 1e-6
+  const maxCost = Math.max(...costs);
+  return costs.map((c) => c / maxCost); // Normalize to [0, 1]
 }
 
 function computeTheoreticalCostEvolution(n, d, steps = 1000) {
@@ -101,7 +101,7 @@ function computeTheoreticalCostEvolution(n, d, steps = 1000) {
 
   // Normalize theoretical costs for alignment
   const maxCAve = Math.max(...cAve);
-  return { tPlot, cAve: cAve.map((c) => c / maxCAve).map((c) => Math.max(c, 1e-6)) };
+  return { tPlot, cAve: cAve.map((c) => c / maxCAve) }; // Normalize to [0, 1]
 }
 
 function renderDSM(DSM) {
@@ -144,36 +144,25 @@ function updateGraphOnDSMChange(DSM) {
   const d =
     DSM.reduce((sum, row) => sum + row.filter((val) => val === 1).length, 0) / n;
 
+  // Recalculate simulated and theoretical costs based on the new DSM
   const simulatedCosts = simulateCostEvolution(DSM, n, d, 1000);
   const { tPlot, cAve } = computeTheoreticalCostEvolution(n, d, 1000);
 
+  // Resample tPlot and cAve to match the length of simulatedCosts
   const resampledTPlot = sampleLogarithmically(tPlot, simulatedCosts.length);
   const resampledCAve = sampleLogarithmically(cAve, simulatedCosts.length);
 
+  // Ensure all data points are strictly positive
   const adjustedSimulatedCosts = simulatedCosts.map((c) => Math.max(c, 1e-6));
   const adjustedCAve = resampledCAve.map((c) => Math.max(c, 1e-6));
 
-  // Ensure the loadingIndicator message is displayed
-  const loadingIndicator = document.getElementById("loadingIndicator");
-  if (loadingIndicator) {
-    loadingIndicator.style.display = "block"; // Make the message visible
-    loadingIndicator.innerHTML =
-      "Simulation complete. Please check the console (Inspect > Console) for detailed information about the selected components, affected components, and updated costs.";
-  } else {
-    console.error("Element with id 'loadingIndicator' not found in the DOM.");
-  }
-
+  // Dynamically update the chart with the new data
   if (costChart) {
     costChart.data.labels = resampledTPlot;
     costChart.data.datasets[0].data = adjustedSimulatedCosts;
     costChart.data.datasets[1].data = adjustedCAve;
 
-    costChart.options.scales.y.min =
-      Math.min(...adjustedSimulatedCosts.concat(adjustedCAve)) * 0.9;
-    costChart.options.scales.y.max =
-      Math.max(...adjustedSimulatedCosts.concat(adjustedCAve)) * 1.1;
-
-    costChart.update();
+    costChart.update(); // Update the chart instance
   } else {
     updateChart(resampledTPlot, adjustedSimulatedCosts, adjustedCAve);
   }
@@ -328,8 +317,19 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
   const canvas = document.getElementById("costChart");
   const ctx = canvas.getContext("2d");
 
-  const lineWidth = 2;
-  const pointRadius = 3;
+  const lineWidthSimulated = 2; // Slightly wider line for simulated costs
+  const lineWidthTheoretical = 5; // Standard width for theoretical costs
+  const pointRadius = 5;
+
+  // Dynamically scale simulated costs to match theoretical costs point-by-point
+  const alignedSimulatedCosts = simulatedCosts.map(
+    (c, i) => c * (theoreticalCosts[i] / (simulatedCosts[i] || 1))
+  );
+
+  // Destroy the existing chart instance if it exists
+  if (costChart) {
+    costChart.destroy();
+  }
 
   costChart = new Chart(ctx, {
     type: "line",
@@ -338,9 +338,9 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
       datasets: [
         {
           label: "Simulated Cost Evolution",
-          data: simulatedCosts,
+          data: alignedSimulatedCosts, // Use dynamically aligned simulated costs
           borderColor: "#A31F34", // MIT red
-          borderWidth: lineWidth,
+          borderWidth: lineWidthSimulated, // Slightly wider line
           fill: false,
           pointRadius: pointRadius,
         },
@@ -348,7 +348,7 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
           label: "Theoretical Cost Evolution",
           data: theoreticalCosts,
           borderColor: "#FFA500", // Orange for theoretical curve
-          borderWidth: lineWidth,
+          borderWidth: lineWidthTheoretical, // Standard width
           fill: false,
           borderDash: [5, 5], // Dashed line for theoretical curve
         },
@@ -382,7 +382,6 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
           },
           ticks: {
             callback: function (value, index) {
-              // Simplify x-axis labels
               const logValue = Math.log10(value);
               return Number.isInteger(logValue) ? `10^${logValue}` : "";
             },
@@ -403,8 +402,6 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
               return null;
             },
           },
-          min: Math.min(...simulatedCosts.concat(theoreticalCosts)) * 0.9,
-          max: Math.max(...simulatedCosts.concat(theoreticalCosts)) * 1.1,
         },
       },
     },
