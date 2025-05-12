@@ -41,7 +41,7 @@ function generateDSM(n, d) {
   return DSM;
 }
 
-function simulateCostEvolution(DSM, n, d, steps = 1000) {
+function simulateCostEvolution(DSM, n, d, steps = 3000) { // Increased steps for more data points
   let costs = Array(n).fill(1); // Initial costs set to 1
   const logSteps = [];
   const timeFactor = (factorial(d + 1) / Math.pow(d, d + 2)) * n; // Scaling factor for alignment
@@ -60,36 +60,21 @@ function simulateCostEvolution(DSM, n, d, steps = 1000) {
       costs[selectedComponent] = adjustedNewCost;
 
       // Propagate changes to dependent components
-      const affectedComponents = [];
       DSM.forEach((row, i) => {
         if (row[selectedComponent] === 1 && i !== selectedComponent) {
           if (costs[i] > adjustedNewCost) {
             costs[i] = adjustedNewCost;
-            affectedComponents.push(i + 1); // Log affected components (1-based index)
           }
         }
       });
-
-      logSteps.push(
-        `Step ${t}: Selected component ${selectedComponent + 1}, updated cost to ${adjustedNewCost.toFixed(
-          4
-        )}. Affected components: ${affectedComponents.join(", ")}`
-      );
     } else {
       costs[selectedComponent] *= 0.99;
-      logSteps.push(
-        `Step ${t}: Selected component ${selectedComponent + 1}, forced slight improvement.`
-      );
     }
   }
 
-  // Log simulation details to the console
-  console.log("Simulation Steps:");
-  logSteps.slice(0, 10).forEach((log) => console.log(log)); // Print only the first 10 steps
-
-  // Normalize costs using the scaling factor
-  const maxCost = Math.max(...costs);
-  return costs.map((c) => c / maxCost); // Normalize to [0, 1]
+  // Normalize costs to initial value for "pregnant tummy" effect
+  const initialCost = costs[0]; // Normalize to the first cost value
+  return costs.map((c) => c / initialCost);
 }
 
 function computeTheoreticalCostEvolution(n, d, steps = 1000) {
@@ -101,7 +86,7 @@ function computeTheoreticalCostEvolution(n, d, steps = 1000) {
 
   // Normalize theoretical costs for alignment
   const maxCAve = Math.max(...cAve);
-  return { tPlot, cAve: cAve.map((c) => c / maxCAve) }; // Normalize to [0, 1]
+  return { tPlot, cAve: cAve.map((c) => c / maxCAve).map((c) => Math.max(c, 1e-6)) };
 }
 
 function renderDSM(DSM) {
@@ -144,28 +129,21 @@ function updateGraphOnDSMChange(DSM) {
   const d =
     DSM.reduce((sum, row) => sum + row.filter((val) => val === 1).length, 0) / n;
 
-  // Recalculate simulated and theoretical costs based on the new DSM
-  const simulatedCosts = simulateCostEvolution(DSM, n, d, 1000);
-  const { tPlot, cAve } = computeTheoreticalCostEvolution(n, d, 1000);
+  // Recalculate simulated costs with more steps for better resolution
+  const steps = 3000;
+  const simulatedCosts = simulateCostEvolution(DSM, n, d, steps);
 
-  // Resample tPlot and cAve to match the length of simulatedCosts
+  // Generate x-axis values (logarithmic scale)
+  const tPlot = Array.from({ length: steps }, (_, i) =>
+    Math.pow(10, i / (steps / 50))
+  );
   const resampledTPlot = sampleLogarithmically(tPlot, simulatedCosts.length);
-  const resampledCAve = sampleLogarithmically(cAve, simulatedCosts.length);
 
   // Ensure all data points are strictly positive
   const adjustedSimulatedCosts = simulatedCosts.map((c) => Math.max(c, 1e-6));
-  const adjustedCAve = resampledCAve.map((c) => Math.max(c, 1e-6));
 
-  // Dynamically update the chart with the new data
-  if (costChart) {
-    costChart.data.labels = resampledTPlot;
-    costChart.data.datasets[0].data = adjustedSimulatedCosts;
-    costChart.data.datasets[1].data = adjustedCAve;
-
-    costChart.update(); // Update the chart instance
-  } else {
-    updateChart(resampledTPlot, adjustedSimulatedCosts, adjustedCAve);
-  }
+  // Update the chart with the new data
+  updateChart(resampledTPlot, adjustedSimulatedCosts);
 }
 
 let costChart; // Store chart instance globally
@@ -284,18 +262,16 @@ function runSimulation() {
   renderDSM(DSM);
 
   // Simulate cost evolution using the updated DSM
-  const simulatedCosts = simulateCostEvolution(DSM, n, d, 1000);
+  const simulatedCosts = simulateCostEvolution(DSM, n, d, 3000);
 
-  // Compute theoretical cost evolution dynamically based on the updated DSM
-  const { tPlot, cAve } = computeTheoreticalCostEvolution(n, d, 1000);
-
-  // Resample tPlot and cAve to match the length of simulatedCosts
+  // Generate x-axis values (logarithmic scale)
+  const tPlot = Array.from({ length: 3000 }, (_, i) =>
+    Math.pow(10, i / (3000 / 50))
+  );
   const resampledTPlot = sampleLogarithmically(tPlot, simulatedCosts.length);
-  const resampledCAve = sampleLogarithmically(cAve, simulatedCosts.length);
 
   // Ensure all data points are strictly positive
   const adjustedSimulatedCosts = simulatedCosts.map((c) => Math.max(c, 1e-6));
-  const adjustedCAve = resampledCAve.map((c) => Math.max(c, 1e-6));
 
   // Clear the existing chart instance before updating
   if (costChart) {
@@ -303,8 +279,8 @@ function runSimulation() {
     costChart = null; // Reset the global chart variable
   }
 
-  // Update the graph with both simulated and theoretical results
-  updateChart(resampledTPlot, adjustedSimulatedCosts, adjustedCAve);
+  // Update the graph with simulated results
+  updateChart(resampledTPlot, adjustedSimulatedCosts);
 
   // Update the message to indicate the simulation is complete
   if (loadingIndicator) {
@@ -313,23 +289,24 @@ function runSimulation() {
   }
 }
 
-function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
+function updateChart(tPlot, simulatedCosts) {
   const canvas = document.getElementById("costChart");
+  // Set canvas aspect ratio to 2:3
+  canvas.width = 600;
+  canvas.height = 400;
+
   const ctx = canvas.getContext("2d");
-
-  const lineWidthSimulated = 2; // Slightly wider line for simulated costs
-  const lineWidthTheoretical = 5; // Standard width for theoretical costs
-  const pointRadius = 5;
-
-  // Dynamically scale simulated costs to match theoretical costs point-by-point
-  const alignedSimulatedCosts = simulatedCosts.map(
-    (c, i) => c * (theoreticalCosts[i] / (simulatedCosts[i] || 1))
-  );
+  const lineWidth = 3; // Slightly wider line for better visibility
+  const pointRadius = 2;
 
   // Destroy the existing chart instance if it exists
   if (costChart) {
     costChart.destroy();
   }
+
+  // Ensure y-axis min is always positive and never negative
+  const minY = Math.max(1e-6, Math.min(...simulatedCosts) * 0.9);
+  const maxY = Math.max(...simulatedCosts) * 1.1;
 
   costChart = new Chart(ctx, {
     type: "line",
@@ -338,25 +315,18 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
       datasets: [
         {
           label: "Simulated Cost Evolution",
-          data: alignedSimulatedCosts, // Use dynamically aligned simulated costs
+          data: simulatedCosts,
           borderColor: "#A31F34", // MIT red
-          borderWidth: lineWidthSimulated, // Slightly wider line
+          borderWidth: lineWidth,
           fill: false,
           pointRadius: pointRadius,
-        },
-        {
-          label: "Theoretical Cost Evolution",
-          data: theoreticalCosts,
-          borderColor: "#FFA500", // Orange for theoretical curve
-          borderWidth: lineWidthTheoretical, // Standard width
-          fill: false,
-          borderDash: [5, 5], // Dashed line for theoretical curve
         },
       ],
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: false,
+      aspectRatio: 2 / 3,
+      maintainAspectRatio: true,
       animation: {
         duration: 800,
         easing: "easeInOutQuad",
@@ -370,7 +340,7 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
           },
         },
         legend: {
-          position: "top",
+          display: false, // Remove legend since there's only one line
         },
       },
       scales: {
@@ -393,6 +363,8 @@ function updateChart(tPlot, simulatedCosts, theoreticalCosts) {
             display: true,
             text: "Cost",
           },
+          min: minY,
+          max: maxY,
           ticks: {
             callback: function (value) {
               const logValue = Math.log10(value);
