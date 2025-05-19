@@ -94,8 +94,12 @@ function simulateCostEvolution(DSM, n, d, steps = 1000000, numPoints = 200) {
     }
     if (sampleIdx >= sampleSteps.length) break;
   }
+  // Fill missing points if simulation ended early
+  while (costHistory.length < numPoints) {
+    costHistory.push(costHistory.length > 0 ? costHistory[costHistory.length - 1] : 1);
+  }
   // Normalize to initial average cost
-  const initial = costHistory[0];
+  const initial = costHistory[0] || 1;
   return costHistory.map(c => c / initial);
 }
 
@@ -317,13 +321,23 @@ function updateChart(tPlot, simulatedCosts) {
     costChart.destroy();
   }
 
-  // Plot the step numbers on the x-axis instead of log-scaled values
-  const stepData = simulatedCosts.map((y, i) => ({ x: i + 1, y }));
+  // Ensure at least two points for plotting
+  if (simulatedCosts.length < 2) {
+    // Fill with last known value if needed
+    while (simulatedCosts.length < 2) {
+      simulatedCosts.push(simulatedCosts.length > 0 ? simulatedCosts[simulatedCosts.length - 1] : 1);
+    }
+  }
+  if (tPlot.length < 2) {
+    while (tPlot.length < 2) {
+      tPlot.push(tPlot.length > 0 ? tPlot[tPlot.length - 1] + 1 : 2);
+    }
+  }
 
-  // Log data to ensure it's not empty and valid
-  console.log("Plotting step data points:", stepData.length, stepData.slice(0, 5));
+  // Use scatter mode with {x, y} pairs for log-log plot
+  const dataPoints = tPlot.map((x, i) => ({ x, y: simulatedCosts[i] }));
 
-  if (stepData.length < 2) {
+  if (dataPoints.length < 2) {
     alert("Simulation did not produce enough valid data points to plot a line. Try changing the DSM parameters.");
     return;
   }
@@ -331,18 +345,18 @@ function updateChart(tPlot, simulatedCosts) {
   costChart = new Chart(ctx, {
     type: "line",
     data: {
-      labels: stepData.map(d => d.x), // <-- Add this line to ensure x-axis is mapped to step numbers
       datasets: [
         {
           label: "Simulated Cost Evolution",
-          data: stepData.map(d => d.y), // <-- Use y values for line chart with labels as x
+          data: dataPoints,
           borderColor: "#000",
           backgroundColor: "#000",
           fill: false,
-          pointRadius: 3,
+          pointRadius: 2,
           pointStyle: "circle",
           borderWidth: 2,
           tension: 0,
+          showLine: true,
         }
       ],
     },
@@ -355,7 +369,7 @@ function updateChart(tPlot, simulatedCosts) {
         tooltip: {
           callbacks: {
             label: function (context) {
-              return `Cost: ${context.parsed.y !== undefined ? context.parsed.y.toExponential(2) : context.raw.toExponential(2)}`;
+              return `Cost: ${context.parsed.y !== undefined ? context.parsed.y.toExponential(2) : context.raw.y.toExponential(2)}`;
             },
           },
         },
@@ -363,23 +377,25 @@ function updateChart(tPlot, simulatedCosts) {
           display: false,
         },
       },
-      // Remove parsing:false for this mode
       scales: {
         x: {
-          type: "linear",
+          type: "logarithmic",
           title: {
             display: true,
-            text: "Step",
+            text: "# of Improvements Attempts",
           },
           min: 1,
-          max: stepData.length,
+          max: 1e6,
           ticks: {
-            stepSize: Math.ceil(stepData.length / 10),
             callback: function (value) {
-              return value;
+              const logValue = Math.log10(value);
+              if (Number.isInteger(logValue)) {
+                return `10^${logValue}`;
+              }
+              return null;
             },
             autoSkip: true,
-            maxTicksLimit: 10,
+            maxTicksLimit: 6,
           },
         },
         y: {
