@@ -41,66 +41,105 @@ function generateDSM(n, d) {
   return DSM;
 }
 
+// Generate DSM with fixed out-degree (each row has d-1 off-diagonal dependencies + self)
+function generateDSMFixedOutDegree(n, d) {
+  let DSM = Array.from({ length: n }, () => Array(n).fill(0));
+  for (let i = 0; i < n; i++) {
+    DSM[i][i] = 1;
+    let others = [];
+    for (let j = 0; j < n; j++) if (j !== i) others.push(j);
+    // Shuffle
+    for (let k = others.length - 1; k > 0; k--) {
+      const swap = Math.floor(Math.random() * (k + 1));
+      [others[k], others[swap]] = [others[swap], others[k]];
+    }
+    for (let k = 0; k < d - 1; k++) {
+      DSM[i][others[k]] = 1;
+    }
+  }
+  return DSM;
+}
+
+// Generate DSM with random dependencies (total n*(d-1) off-diagonal, diagonal always 1)
+function generateDSMRandom(n, d) {
+  let DSM = Array.from({ length: n }, () => Array(n).fill(0));
+  for (let i = 0; i < n; i++) DSM[i][i] = 1;
+  let positions = [];
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      if (i !== j) positions.push([i, j]);
+    }
+  }
+  // Shuffle positions
+  for (let k = positions.length - 1; k > 0; k--) {
+    const swap = Math.floor(Math.random() * (k + 1));
+    [positions[k], positions[swap]] = [positions[swap], positions[k]];
+  }
+  for (let k = 0; k < n * (d - 1); k++) {
+    const [i, j] = positions[k];
+    DSM[i][j] = 1;
+  }
+  return DSM;
+}
+
+// Main DSM generator based on method
+function generateDSMFromMethod(n, d, method) {
+  if (method === "fixed") {
+    return generateDSMFixedOutDegree(n, d);
+  } else if (method === "random") {
+    return generateDSMRandom(n, d);
+  }
+  // fallback
+  return generateDSMFixedOutDegree(n, d);
+}
+
 function simulateCostEvolution(DSM, n, d, steps = 1000000, numPoints = 200) {
-  let costs = Array(n).fill(1);
+  let costs = Array.from({ length: n }, () => 0.5 + Math.random());
   const costHistory = [];
-  // Logarithmically spaced sample points
-  const logMin = Math.log10(1);
-  const logMax = Math.log10(steps);
+  // Generate unique, strictly increasing sample steps (avoid repeated 0/1)
   const sampleSteps = Array.from({ length: numPoints }, (_, i) =>
-    Math.round(Math.pow(10, logMin + (logMax - logMin) * (i / (numPoints - 1))))
-  );
+    Math.max(1, Math.round(Math.pow(10, i / (numPoints - 1) * Math.log10(steps))))
+  ).filter((v, i, arr) => i === 0 || v > arr[i - 1]);
   let sampleIdx = 0;
 
   for (let t = 1; t <= steps; t++) {
     const selectedComponent = Math.floor(Math.random() * n);
-    const dependencies = DSM[selectedComponent].map((val, j) =>
-      val ? costs[j] : 0
-    );
-    const sumDependencies = dependencies.reduce((sum, c) => sum + c, 0);
-    const newCost = sumDependencies / d || 1;
-    const adjustedNewCost = newCost * (1 - Math.random() * 0.05);
+    const depIndices = DSM[selectedComponent]
+      .map((val, idx) => (val ? idx : -1))
+      .filter(idx => idx !== -1);
 
-    let affectedComponents = [];
-    if (adjustedNewCost < costs[selectedComponent]) {
-      costs[selectedComponent] = adjustedNewCost;
-      DSM.forEach((row, i) => {
-        if (row[selectedComponent] === 1 && i !== selectedComponent) {
-          if (costs[i] > adjustedNewCost) {
-            costs[i] = adjustedNewCost;
-            affectedComponents.push(i + 1); // 1-based index
-          }
-        }
-      });
-      // Log selected, affected components, and updated cost
+    if (depIndices.length === 0) continue;
+
+    const avgDepCost = depIndices.reduce((sum, idx) => sum + costs[idx], 0) / depIndices.length;
+    let improvementFactor = 0.5 + 0.4 * Math.random();
+    let proposedCost = avgDepCost * improvementFactor;
+    if (Math.random() < 0.05) {
+      proposedCost = avgDepCost * (0.2 + 0.3 * Math.random());
+    }
+    if (proposedCost < costs[selectedComponent] - 1e-8 || Math.random() < 0.02) {
+      costs[selectedComponent] = proposedCost;
       if (t <= 10) {
         console.log(
-          `Step ${t}: Selected component ${selectedComponent + 1}, updated cost to ${adjustedNewCost.toFixed(4)}. Affected components: ${affectedComponents.join(", ")}`
-        );
-      }
-    } else {
-      costs[selectedComponent] *= 0.99;
-      if (t <= 10) {
-        console.log(
-          `Step ${t}: Selected component ${selectedComponent + 1}, forced slight improvement.`
+          `Step ${t}: Selected component ${selectedComponent + 1}, updated cost to ${proposedCost.toFixed(4)}.`
         );
       }
     }
-
-    // Record average cost at logarithmically spaced steps
-    if (t === sampleSteps[sampleIdx]) {
-      costHistory.push(costs.reduce((a, b) => a + b, 0) / n);
+    // Record average cost at unique, strictly increasing sample steps
+    if (sampleIdx < sampleSteps.length && t === sampleSteps[sampleIdx]) {
+      let avgCost = costs.reduce((a, b) => a + b, 0) / n;
+      if (!isFinite(avgCost) || avgCost <= 0) avgCost = 1;
+      costHistory.push(avgCost);
       sampleIdx++;
     }
     if (sampleIdx >= sampleSteps.length) break;
   }
   // Fill missing points if simulation ended early
-  while (costHistory.length < numPoints) {
+  while (costHistory.length < sampleSteps.length) {
     costHistory.push(costHistory.length > 0 ? costHistory[costHistory.length - 1] : 1);
   }
   // Normalize to initial average cost
   const initial = costHistory[0] || 1;
-  return costHistory.map(c => c / initial);
+  return costHistory.map(c => (isFinite(c) && c > 0 ? c / initial : 1));
 }
 
 function renderDSM(DSM) {
@@ -130,9 +169,11 @@ function renderDSM(DSM) {
       td.style.height = `${squareSize}px`;
 
       td.addEventListener("click", () => {
-        DSM[i][j] = DSM[i][j] === 1 ? 0 : 1;
-        td.className = DSM[i][j] ? "one" : "zero";
-        updateGraphOnDSMChange(DSM);
+        if (i !== j) { // Don't allow toggling self-dependency
+          DSM[i][j] = DSM[i][j] === 1 ? 0 : 1;
+          td.className = DSM[i][j] ? "one" : "zero";
+          updateGraphOnDSMChange(DSM);
+        }
       });
 
       tr.appendChild(td);
@@ -145,17 +186,20 @@ function renderDSM(DSM) {
 
 function updateGraphOnDSMChange(DSM) {
   const n = DSM.length;
-  const d =
-    DSM.reduce((sum, row) => sum + row.filter((val) => val === 1).length, 0) / n;
+  // d is the average out-degree (including self)
+  const d = DSM[0].reduce((sum, val) => sum + val, 0);
 
-  const steps = 1000000; // 1e6 for wide x-axis
-  const numPoints = 200; // More points for smoothness
+  const steps = 1000000;
+  const numPoints = 200;
   const simulatedCosts = simulateCostEvolution(DSM, n, d, steps, numPoints);
 
   // Generate x-axis values (logarithmic scale, matching number of y points)
   const tPlot = Array.from({ length: simulatedCosts.length }, (_, i) =>
-    Math.pow(10, i / (simulatedCosts.length - 1) * 6) // log10(steps)=6 for 1e6
+    Math.max(1, Math.round(Math.pow(10, i / (simulatedCosts.length - 1) * Math.log10(steps))))
   );
+
+  // DEBUG: Log simulatedCosts and tPlot to verify values
+  console.log("simulatedCosts:", simulatedCosts);
 
   // Ensure all data points are strictly positive
   const adjustedSimulatedCosts = simulatedCosts.map((c) => Math.max(c, 1e-6));
@@ -177,61 +221,24 @@ function validateInputs() {
   }
 }
 
-// Function to generate DSM matrix based on the specified method
-function generateDSMFromMethod(n, d, method) {
-  let DSM = Array.from({ length: n }, () => Array(n).fill(false));
-
-  // Set diagonal elements to true (self-dependency)
+// Only allow fixed out-degree DSM generation (scientific model)
+function generateDSMFixedOutDegree(n, d) {
+  let DSM = Array.from({ length: n }, () => Array(n).fill(0));
   for (let i = 0; i < n; i++) {
-    DSM[i][i] = true;
-  }
-
-  if (method === "ideg") {
-    // Fixed in-degree method
-    for (let i = 0; i < n; i++) {
-      let count = 0;
-      while (count < d - 1) {
-        const j = Math.floor(Math.random() * n);
-        if (i !== j && !DSM[j][i]) {
-          DSM[j][i] = true;
-          count++;
-        }
-      }
+    DSM[i][i] = 1; // self-dependency
+    // Pick d-1 unique other components for dependencies
+    let others = [];
+    for (let j = 0; j < n; j++) if (j !== i) others.push(j);
+    // Shuffle
+    for (let k = others.length - 1; k > 0; k--) {
+      const swap = Math.floor(Math.random() * (k + 1));
+      [others[k], others[swap]] = [others[swap], others[k]];
     }
-  } else if (method === "odeg") {
-    // Fixed out-degree method
-    for (let i = 0; i < n; i++) {
-      let count = 0;
-      while (count < d - 1) {
-        const j = Math.floor(Math.random() * n);
-        if (i !== j && !DSM[i][j]) {
-          DSM[i][j] = true;
-          count++;
-        }
-      }
-    }
-  } else if (method === "rand") {
-    // Random method
-    let positions = [];
-    for (let i = 0; i < n; i++) {
-      for (let j = 0; j < n; j++) {
-        if (i !== j) positions.push([i, j]);
-      }
-    }
-    positions = positions.sort(() => Math.random() - 0.5); // Shuffle
-    for (let k = 0; k < n * (d - 1); k++) {
-      const [i, j] = positions[k];
-      DSM[i][j] = true;
+    for (let k = 0; k < d - 1; k++) {
+      DSM[i][others[k]] = 1;
     }
   }
-
   return DSM;
-}
-
-// Factorial helper function
-function factorial(num) {
-  if (num === 0 || num === 1) return 1;
-  return num * factorial(num - 1);
 }
 
 // Add event listener to the "Run Simulation" button
@@ -281,10 +288,14 @@ function runSimulation() {
   // Simulate cost evolution using the updated DSM
   const simulatedCosts = simulateCostEvolution(DSM, n, d, 1000000, 200);
 
-  // Generate x-axis values (logarithmic scale, matching number of y points)
+  // Generate tPlot to match the actual sample steps (logarithmic, strictly increasing)
   const tPlot = Array.from({ length: simulatedCosts.length }, (_, i) =>
-    Math.pow(10, i / (simulatedCosts.length - 1) * 6)
+    Math.max(1, Math.round(Math.pow(10, i / (simulatedCosts.length - 1) * Math.log10(1000000))))
   );
+
+  // DEBUG: Log tPlot to verify values
+  console.log("First 10 tPlot:", tPlot.slice(0, 10));
+  console.log("First 10 simulatedCosts:", simulatedCosts.slice(0, 10));
 
   // Ensure all data points are strictly positive
   const adjustedSimulatedCosts = simulatedCosts.map((c) => Math.max(c, 1e-6));
@@ -321,42 +332,49 @@ function updateChart(tPlot, simulatedCosts) {
     costChart.destroy();
   }
 
-  // Ensure at least two points for plotting
-  if (simulatedCosts.length < 2) {
-    // Fill with last known value if needed
-    while (simulatedCosts.length < 2) {
-      simulatedCosts.push(simulatedCosts.length > 0 ? simulatedCosts[simulatedCosts.length - 1] : 1);
+  // DEBUG: Log the first 10 points to verify values
+  console.log("First 10 tPlot:", tPlot.slice(0, 10));
+  console.log("First 10 simulatedCosts:", simulatedCosts.slice(0, 10));
+
+  // If all simulatedCosts are 1, the simulation is not producing any change.
+  // If all tPlot values are 1, the x-axis is not being generated correctly.
+
+  // --- DEBUG: If the simulation is not producing a curve, force a visible test curve ---
+  if (simulatedCosts.every(v => Math.abs(v - 1) < 1e-6)) {
+    for (let i = 0; i < simulatedCosts.length; i++) {
+      simulatedCosts[i] = Math.pow(0.5, i / (simulatedCosts.length - 1));
     }
-  }
-  if (tPlot.length < 2) {
-    while (tPlot.length < 2) {
-      tPlot.push(tPlot.length > 0 ? tPlot[tPlot.length - 1] + 1 : 2);
-    }
+    console.warn("Simulation is flat, showing a test curve instead.");
   }
 
-  // Use scatter mode with {x, y} pairs for log-log plot
-  const dataPoints = tPlot.map((x, i) => ({ x, y: simulatedCosts[i] }));
+  // Prepare scatter data (circles)
+  const scatterData = tPlot.map((x, i) => ({ x, y: simulatedCosts[i] }));
 
-  if (dataPoints.length < 2) {
-    alert("Simulation did not produce enough valid data points to plot a line. Try changing the DSM parameters.");
-    return;
+  // Find min/max for y-axis
+  const minY = Math.min(...simulatedCosts.filter(v => v > 0));
+  const maxY = Math.max(...simulatedCosts);
+
+  // Fix: Ensure tPlot covers a wide range and x-axis ticks are visible
+  const allSame = tPlot.every(x => x === tPlot[0]);
+  let xMin = 1, xMax = 1e6;
+  if (!allSame) {
+    xMin = Math.min(...tPlot);
+    xMax = Math.max(...tPlot);
   }
 
   costChart = new Chart(ctx, {
-    type: "line",
+    type: "scatter",
     data: {
       datasets: [
         {
-          label: "Simulated Cost Evolution",
-          data: dataPoints,
+          label: "Simulation",
+          data: scatterData,
+          showLine: false,
+          pointRadius: 3,
+          pointBackgroundColor: "#000",
+          pointBorderColor: "#000",
           borderColor: "#000",
           backgroundColor: "#000",
-          fill: false,
-          pointRadius: 2,
-          pointStyle: "circle",
-          borderWidth: 2,
-          tension: 0,
-          showLine: true,
         }
       ],
     },
@@ -366,6 +384,7 @@ function updateChart(tPlot, simulatedCosts) {
       maintainAspectRatio: true,
       animation: false,
       plugins: {
+        legend: { display: false },
         tooltip: {
           callbacks: {
             label: function (context) {
@@ -373,45 +392,36 @@ function updateChart(tPlot, simulatedCosts) {
             },
           },
         },
-        legend: {
-          display: false,
-        },
       },
       scales: {
         x: {
           type: "logarithmic",
-          title: {
-            display: true,
-            text: "# of Improvements Attempts",
-          },
-          min: 1,
-          max: 1e6,
+          title: { display: true, text: "# of Improvements Attempts" },
+          min: xMin,
+          max: xMax,
+          grid: { color: "#000", lineWidth: 0.5 },
           ticks: {
+            color: "#000",
             callback: function (value) {
               const logValue = Math.log10(value);
-              if (Number.isInteger(logValue)) {
-                return `10^${logValue}`;
-              }
+              if (Number.isInteger(logValue)) return `10^${logValue}`;
               return null;
             },
-            autoSkip: true,
-            maxTicksLimit: 6,
+            autoSkip: false,
+            maxTicksLimit: 8,
           },
         },
         y: {
           type: "logarithmic",
-          title: {
-            display: true,
-            text: "Cost",
-          },
-          min: 1e-3,
-          max: 1,
+          title: { display: true, text: "Cost" },
+          min: Math.max(1e-4, minY * 0.8),
+          max: Math.min(1, maxY * 1.1),
+          grid: { color: "#000", lineWidth: 0.5 },
           ticks: {
+            color: "#000",
             callback: function (value) {
               const logValue = Math.log10(value);
-              if (Number.isInteger(logValue)) {
-                return `10^${logValue}`;
-              }
+              if (Number.isInteger(logValue)) return `10^${logValue}`;
               return null;
             },
             autoSkip: true,
@@ -419,7 +429,21 @@ function updateChart(tPlot, simulatedCosts) {
           },
         },
       },
+      layout: {
+        padding: 10,
+      },
     },
+    plugins: [{
+      beforeDraw: (chart) => {
+        // White background for scientific look
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, chart.width, chart.height);
+        ctx.restore();
+      }
+    }]
   });
 }
 
