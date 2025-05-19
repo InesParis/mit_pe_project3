@@ -84,52 +84,67 @@ h2 {
 }
 
 .dsm-section {
-  width: 60%; /* Increased width for better readability */
-  height: 600px; /* Increased height for better readability */
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1/1;
+  min-width: 200px;
+  min-height: 200px;
   display: flex;
-  flex-direction: column; /* Stack title and DSM vertically */
-  justify-content: center; /* Center vertically */
-  align-items: center;     /* Center horizontally */
-  gap: 8px;                /* Small gap between title and DSM */
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  /* Remove overflow: auto to avoid scrollbars */
 }
 
 .dsm-section h2 {
-  margin: 0 0 8px 0; /* Reduce space below the title */
+  margin: 0 0 8px 0;
   padding: 0;
   color: #a31f34;
+  font-size: 1.2rem;
 }
 
-.graph-section {
-  width: 70%; /* Increase the width allocated to the graph */
-  height: 500px; /* Set a fixed height for better readability */
+#dsmContainer {
+  width: 100%;
+  height: 100%;
   display: flex;
-  justify-content: center; /* Center the graph horizontally */
-  align-items: center; /* Center the graph vertically */
+  justify-content: center;
+  align-items: flex-start;
 }
 
 .dsm-section table {
-  width: 100%; /* Allow the DSM to scale dynamically */
-  max-width: 600px; /* Increase the maximum width of the DSM */
-  max-height: 500px; /* Increase the maximum height of the DSM */
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1/1;
   border-collapse: collapse;
-  margin: 0 auto; /* Center the DSM horizontally */
-  /* Remove top margin if present */
+  margin: 0 auto;
+  table-layout: fixed;
+}
+
+.dsm-section table tr {
+  height: 1px;
 }
 
 .dsm-section table td {
-  width: 35px; /* Increased cell size */
-  height: 35px;
-  border: 1px solid #ccc; /* Light border for clarity */
+  /* Use clamp to keep cells square and responsive */
+  width: clamp(8px, calc(100% / var(--dsm-size)), 32px);
+  height: clamp(8px, calc(100% / var(--dsm-size)), 32px);
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  padding: 0;
 }
 
 .dsm-section table td.one {
-  background-color: #a31f34; /* MIT red for 'one' */
-  border: 2px solid #8a1a2b; /* Darker red border for emphasis */
+  background-color: #a31f34;
+  border: 2px solid #8a1a2b;
 }
 
 .dsm-section table td.zero {
-  background-color: #f0f0f0; /* Light gray for 'zero' */
-  border: 1px solid #d3d3d4; /* Slightly darker gray border */
+  background-color: #f0f0f0;
+  border: 1px solid #d3d3d4;
 }
 
 canvas {
@@ -167,8 +182,10 @@ canvas#costChart {
   }
 
   .dsm-section {
-    width: 100%; /* Allow the DSM to take full width on smaller screens */
-    height: 400px; /* Adjust height for smaller screens */
+    max-width: 90vw;
+    min-width: 120px;
+    aspect-ratio: 1/1;
+    height: auto;
   }
 
   .graph-section {

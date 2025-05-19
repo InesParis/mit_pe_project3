@@ -166,22 +166,26 @@ function renderDSM(DSM) {
   let container = document.getElementById("dsmContainer");
   container.innerHTML = ""; // Clear previous content
 
+  // Set CSS variable for cell sizing
+  container.style.setProperty('--dsm-size', DSM.length);
+
   let table = document.createElement("table");
-  table.style.margin = "0 auto"; // Center the table
+  table.style.margin = "0 auto";
+  table.style.width = "100%";
+  table.style.height = "100%";
+  table.style.aspectRatio = "1 / 1";
+  table.style.tableLayout = "fixed";
 
   const n = DSM.length;
-  const containerWidth = container.offsetWidth || 800;
-  const containerHeight = container.offsetHeight || 400;
-  const maxSquareSize = Math.min(containerWidth, containerHeight) / n;
-  const squareSize = Math.max(2, Math.min(20, maxSquareSize));
 
   DSM.forEach((row, i) => {
     let tr = document.createElement("tr");
     row.forEach((cell, j) => {
       let td = document.createElement("td");
       td.className = cell ? "one" : "zero";
-      td.style.width = `${squareSize}px`;
-      td.style.height = `${squareSize}px`;
+      // No fixed pixel sizing, let CSS handle it responsively
+      td.style.width = "";
+      td.style.height = "";
 
       td.addEventListener("click", () => {
         if (i !== j) { // Don't allow toggling self-dependency
