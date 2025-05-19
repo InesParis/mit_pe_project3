@@ -94,6 +94,7 @@ function generateDSMFromMethod(n, d, method) {
 }
 
 function simulateCostEvolution(DSM, n, d, steps = 1000000, numPoints = 200) {
+  // Always use the stochastic simulation for all d
   let costs = Array.from({ length: n }, () => 0.5 + Math.random());
   const costHistory = [];
   const sampleSteps = Array.from({ length: numPoints }, (_, i) =>
@@ -101,53 +102,45 @@ function simulateCostEvolution(DSM, n, d, steps = 1000000, numPoints = 200) {
   ).filter((v, i, arr) => i === 0 || v > arr[i - 1]);
   let sampleIdx = 0;
 
-  // Threshold for "high" d (e.g., d >= n/2)
-  const highD = d >= n / 2;
-
-  // For high d: fixed, tiny improvement factor, no breakthroughs/randomness
-  // For low d: keep current logic
-  const dRatio = (d - 1) / (n - 1);
-  const minFactor = 0.5 + 0.48 * dRatio;
-  const maxFactor = 0.9 + 0.1 * dRatio;
-  const breakthroughProb = 0.05 * (1 - dRatio);
-  const randomAcceptProb = 0.02 * (1 - dRatio);
-
-  // Choose a fixed improvement factor for high d (e.g., 0.995)
-  const fixedHighDImprovement = 0.995;
+  // For d >= 3, use a constant improvement factor and no randomness
+  let minFactor, maxFactor, breakthroughProb, randomAcceptProb;
+  if (d >= 3) {
+    minFactor = maxFactor = 0.98; // or 0.99 for a shallower slope
+    breakthroughProb = 0;
+    randomAcceptProb = 0;
+  } else {
+    const dRatio = (d - 1) / (n - 1);
+    minFactor = 0.5 + 0.48 * dRatio;
+    maxFactor = 0.9 + 0.1 * dRatio;
+    breakthroughProb = 0.05 * (1 - dRatio);
+    randomAcceptProb = 0.02 * (1 - dRatio);
+  }
 
   for (let t = 1; t <= steps; t++) {
-    if (highD) {
-      // For high d: decay all costs strictly exponentially (straight line in log-log plot)
-      for (let i = 0; i < n; i++) {
-        costs[i] *= fixedHighDImprovement;
-      }
-    } else {
-      // Existing logic for low d
-      const selectedComponent = Math.floor(Math.random() * n);
-      const depIndices = DSM[selectedComponent]
-        .map((val, idx) => (val ? idx : -1))
-        .filter(idx => idx !== -1);
+    const selectedComponent = Math.floor(Math.random() * n);
+    const depIndices = DSM[selectedComponent]
+      .map((val, idx) => (val ? idx : -1))
+      .filter(idx => idx !== -1);
 
-      if (depIndices.length === 0) continue;
+    if (depIndices.length === 0) continue;
 
-      const avgDepCost = depIndices.reduce((sum, idx) => sum + costs[idx], 0) / depIndices.length;
+    const avgDepCost = depIndices.reduce((sum, idx) => sum + costs[idx], 0) / depIndices.length;
 
-      let improvementFactor = minFactor + (maxFactor - minFactor) * Math.random();
-      let proposedCost = avgDepCost * improvementFactor;
-      if (Math.random() < breakthroughProb) {
-        let breakthroughFactor = 0.5 + 0.48 * dRatio;
-        proposedCost = avgDepCost * (breakthroughFactor + (improvementFactor - breakthroughFactor) * Math.random());
-      }
-      if (
-        proposedCost < costs[selectedComponent] - 1e-8 ||
-        (!highD && randomAcceptProb > 0 && Math.random() < randomAcceptProb)
-      ) {
-        costs[selectedComponent] = proposedCost;
-        if (t <= 10) {
-          console.log(
-            `Step ${t}: Selected component ${selectedComponent + 1}, updated cost to ${proposedCost.toFixed(4)}.`
-          );
-        }
+    let improvementFactor = minFactor + (maxFactor - minFactor) * Math.random();
+    let proposedCost = avgDepCost * improvementFactor;
+    if (Math.random() < breakthroughProb) {
+      let breakthroughFactor = 0.5 + 0.48 * ((d - 1) / (n - 1));
+      proposedCost = avgDepCost * (breakthroughFactor + (improvementFactor - breakthroughFactor) * Math.random());
+    }
+    if (
+      proposedCost < costs[selectedComponent] - 1e-8 ||
+      (randomAcceptProb > 0 && Math.random() < randomAcceptProb)
+    ) {
+      costs[selectedComponent] = proposedCost;
+      if (t <= 10) {
+        console.log(
+          `Step ${t}: Selected component ${selectedComponent + 1}, updated cost to ${proposedCost.toFixed(4)}.`
+        );
       }
     }
 
@@ -166,7 +159,7 @@ function simulateCostEvolution(DSM, n, d, steps = 1000000, numPoints = 200) {
   }
   // Normalize to initial average cost
   const initial = costHistory[0] || 1;
-  return costHistory.map(c => (isFinite(c) && c > 0 ? c / initial : 1));
+  return { costs: costHistory.map(c => (isFinite(c) && c > 0 ? c / initial : 1)), highD: false };
 }
 
 function renderDSM(DSM) {
@@ -208,12 +201,12 @@ function renderDSM(DSM) {
 
 function updateGraphOnDSMChange(DSM) {
   const n = DSM.length;
-  // d is the average out-degree (including self)
   const d = DSM[0].reduce((sum, val) => sum + val, 0);
-
   const steps = 1000000;
   const numPoints = 200;
-  const simulatedCosts = simulateCostEvolution(DSM, n, d, steps, numPoints);
+  const simResult = simulateCostEvolution(DSM, n, d, steps, numPoints);
+  const simulatedCosts = simResult.costs;
+  const highD = simResult.highD;
 
   // Generate x-axis values (logarithmic scale, matching number of y points)
   const tPlot = Array.from({ length: simulatedCosts.length }, (_, i) =>
@@ -226,7 +219,7 @@ function updateGraphOnDSMChange(DSM) {
   // Ensure all data points are strictly positive
   const adjustedSimulatedCosts = simulatedCosts.map((c) => Math.max(c, 1e-6));
 
-  updateChart(tPlot, adjustedSimulatedCosts);
+  updateChart(tPlot, adjustedSimulatedCosts, highD);
 }
 
 let costChart; // Store chart instance globally
@@ -308,7 +301,9 @@ function runSimulation() {
   renderDSM(DSM);
 
   // Simulate cost evolution using the updated DSM
-  const simulatedCosts = simulateCostEvolution(DSM, n, d, 1000000, 200);
+  const simResult = simulateCostEvolution(DSM, n, d, 1000000, 200);
+  const simulatedCosts = simResult.costs;
+  const highD = simResult.highD;
 
   // Generate tPlot to match the actual sample steps (logarithmic, strictly increasing)
   const tPlot = Array.from({ length: simulatedCosts.length }, (_, i) =>
@@ -329,7 +324,7 @@ function runSimulation() {
   }
 
   // Update the graph with simulated results
-  updateChart(tPlot, adjustedSimulatedCosts);
+  updateChart(tPlot, adjustedSimulatedCosts, highD);
 
   // Update the message to indicate the simulation is complete
   if (loadingIndicator) {
@@ -338,7 +333,7 @@ function runSimulation() {
   }
 }
 
-function updateChart(tPlot, simulatedCosts) {
+function updateChart(tPlot, simulatedCosts, highD) {
   // Ensure the canvas exists and is visible
   const canvas = document.getElementById("costChart");
   if (!canvas) {
@@ -448,8 +443,8 @@ function updateChart(tPlot, simulatedCosts) {
         y: {
           type: "logarithmic",
           title: { display: true, text: "Cost" },
-          min: Math.max(1e-4, minY * 0.8),
-          max: Math.min(1, maxY * 1.1),
+          min: highD ? 1e-2 : Math.max(1e-4, minY * 0.8),
+          max: highD ? 1 : Math.min(1, maxY * 1.1),
           grid: { color: "#000", lineWidth: 0.5 },
           ticks: {
             color: "#000",
