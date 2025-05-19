@@ -102,10 +102,13 @@ function simulateCostEvolution(DSM, n, d, steps = 1000000, numPoints = 200) {
   ).filter((v, i, arr) => i === 0 || v > arr[i - 1]);
   let sampleIdx = 0;
 
-  // Make improvement factor depend on d: higher d, less aggressive improvement
-  // For d=1: [0.5,0.9), for d=n: [0.95,1.0)
-  const minFactor = 0.5 + 0.45 * (d - 1) / (n - 1); // from 0.5 to 0.95
-  const maxFactor = 0.9 + 0.1 * (d - 1) / (n - 1);  // from 0.9 to 1.0
+  // For high d, make improvements extremely small and breakthroughs rare/negligible
+  // For d=1: [0.5,0.9), for d=n: [0.98,1.0)
+  const dRatio = (d - 1) / (n - 1);
+  const minFactor = 0.5 + 0.48 * dRatio; // from 0.5 (d=1) to 0.98 (d=n)
+  const maxFactor = 0.9 + 0.1 * dRatio;  // from 0.9 (d=1) to 1.0 (d=n)
+  const breakthroughProb = 0.05 * (1 - dRatio); // from 0.05 (d=1) to 0 (d=n)
+  const randomAcceptProb = 0.02 * (1 - dRatio); // from 0.02 (d=1) to 0 (d=n)
 
   for (let t = 1; t <= steps; t++) {
     const selectedComponent = Math.floor(Math.random() * n);
@@ -118,12 +121,15 @@ function simulateCostEvolution(DSM, n, d, steps = 1000000, numPoints = 200) {
     const avgDepCost = depIndices.reduce((sum, idx) => sum + costs[idx], 0) / depIndices.length;
     let improvementFactor = minFactor + (maxFactor - minFactor) * Math.random();
     let proposedCost = avgDepCost * improvementFactor;
-    if (Math.random() < 0.05) {
-      // Breakthrough also less aggressive for high d
-      let breakthroughFactor = 0.2 + 0.3 * (1 - (d - 1) / (n - 1)); // from 0.5 (d=1) to 0.2 (d=n)
-      proposedCost = avgDepCost * (breakthroughFactor + (0.5 - breakthroughFactor) * Math.random());
+
+    // Breakthrough: only for low d, and not very strong
+    if (Math.random() < breakthroughProb) {
+      let breakthroughFactor = 0.5 + 0.48 * dRatio; // from 0.5 (d=1) to 0.98 (d=n)
+      proposedCost = avgDepCost * (breakthroughFactor + (improvementFactor - breakthroughFactor) * Math.random());
     }
-    if (proposedCost < costs[selectedComponent] - 1e-8 || Math.random() < 0.02) {
+
+    // Accept if strictly lower, or with small probability (only for low d)
+    if (proposedCost < costs[selectedComponent] - 1e-8 || (randomAcceptProb > 0 && Math.random() < randomAcceptProb)) {
       costs[selectedComponent] = proposedCost;
       if (t <= 10) {
         console.log(
