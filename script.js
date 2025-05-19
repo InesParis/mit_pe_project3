@@ -96,47 +96,61 @@ function generateDSMFromMethod(n, d, method) {
 function simulateCostEvolution(DSM, n, d, steps = 1000000, numPoints = 200) {
   let costs = Array.from({ length: n }, () => 0.5 + Math.random());
   const costHistory = [];
-  // Generate unique, strictly increasing sample steps (avoid repeated 0/1)
   const sampleSteps = Array.from({ length: numPoints }, (_, i) =>
     Math.max(1, Math.round(Math.pow(10, i / (numPoints - 1) * Math.log10(steps))))
   ).filter((v, i, arr) => i === 0 || v > arr[i - 1]);
   let sampleIdx = 0;
 
-  // For high d, make improvements extremely small and breakthroughs rare/negligible
-  // For d=1: [0.5,0.9), for d=n: [0.98,1.0)
+  // Threshold for "high" d (e.g., d >= n/2)
+  const highD = d >= n / 2;
+
+  // For high d: fixed, tiny improvement factor, no breakthroughs/randomness
+  // For low d: keep current logic
   const dRatio = (d - 1) / (n - 1);
-  const minFactor = 0.5 + 0.48 * dRatio; // from 0.5 (d=1) to 0.98 (d=n)
-  const maxFactor = 0.9 + 0.1 * dRatio;  // from 0.9 (d=1) to 1.0 (d=n)
-  const breakthroughProb = 0.05 * (1 - dRatio); // from 0.05 (d=1) to 0 (d=n)
-  const randomAcceptProb = 0.02 * (1 - dRatio); // from 0.02 (d=1) to 0 (d=n)
+  const minFactor = 0.5 + 0.48 * dRatio;
+  const maxFactor = 0.9 + 0.1 * dRatio;
+  const breakthroughProb = 0.05 * (1 - dRatio);
+  const randomAcceptProb = 0.02 * (1 - dRatio);
+
+  // Choose a fixed improvement factor for high d (e.g., 0.995)
+  const fixedHighDImprovement = 0.995;
 
   for (let t = 1; t <= steps; t++) {
-    const selectedComponent = Math.floor(Math.random() * n);
-    const depIndices = DSM[selectedComponent]
-      .map((val, idx) => (val ? idx : -1))
-      .filter(idx => idx !== -1);
+    if (highD) {
+      // For high d: decay all costs strictly exponentially (straight line in log-log plot)
+      for (let i = 0; i < n; i++) {
+        costs[i] *= fixedHighDImprovement;
+      }
+    } else {
+      // Existing logic for low d
+      const selectedComponent = Math.floor(Math.random() * n);
+      const depIndices = DSM[selectedComponent]
+        .map((val, idx) => (val ? idx : -1))
+        .filter(idx => idx !== -1);
 
-    if (depIndices.length === 0) continue;
+      if (depIndices.length === 0) continue;
 
-    const avgDepCost = depIndices.reduce((sum, idx) => sum + costs[idx], 0) / depIndices.length;
-    let improvementFactor = minFactor + (maxFactor - minFactor) * Math.random();
-    let proposedCost = avgDepCost * improvementFactor;
+      const avgDepCost = depIndices.reduce((sum, idx) => sum + costs[idx], 0) / depIndices.length;
 
-    // Breakthrough: only for low d, and not very strong
-    if (Math.random() < breakthroughProb) {
-      let breakthroughFactor = 0.5 + 0.48 * dRatio; // from 0.5 (d=1) to 0.98 (d=n)
-      proposedCost = avgDepCost * (breakthroughFactor + (improvementFactor - breakthroughFactor) * Math.random());
-    }
-
-    // Accept if strictly lower, or with small probability (only for low d)
-    if (proposedCost < costs[selectedComponent] - 1e-8 || (randomAcceptProb > 0 && Math.random() < randomAcceptProb)) {
-      costs[selectedComponent] = proposedCost;
-      if (t <= 10) {
-        console.log(
-          `Step ${t}: Selected component ${selectedComponent + 1}, updated cost to ${proposedCost.toFixed(4)}.`
-        );
+      let improvementFactor = minFactor + (maxFactor - minFactor) * Math.random();
+      let proposedCost = avgDepCost * improvementFactor;
+      if (Math.random() < breakthroughProb) {
+        let breakthroughFactor = 0.5 + 0.48 * dRatio;
+        proposedCost = avgDepCost * (breakthroughFactor + (improvementFactor - breakthroughFactor) * Math.random());
+      }
+      if (
+        proposedCost < costs[selectedComponent] - 1e-8 ||
+        (!highD && randomAcceptProb > 0 && Math.random() < randomAcceptProb)
+      ) {
+        costs[selectedComponent] = proposedCost;
+        if (t <= 10) {
+          console.log(
+            `Step ${t}: Selected component ${selectedComponent + 1}, updated cost to ${proposedCost.toFixed(4)}.`
+          );
+        }
       }
     }
+
     // Record average cost at unique, strictly increasing sample steps
     if (sampleIdx < sampleSteps.length && t === sampleSteps[sampleIdx]) {
       let avgCost = costs.reduce((a, b) => a + b, 0) / n;
@@ -159,13 +173,8 @@ function renderDSM(DSM) {
   let container = document.getElementById("dsmContainer");
   container.innerHTML = ""; // Clear previous content
 
-  // Create and append the title above the table
-  const title = document.createElement("h2");
-  title.textContent = "Generated DSM";
-  title.style.textAlign = "center";
-  container.appendChild(title);
-
   let table = document.createElement("table");
+  table.style.margin = "0 auto"; // Center the table
 
   const n = DSM.length;
   const containerWidth = container.offsetWidth || 800;
@@ -387,10 +396,10 @@ function updateChart(tPlot, simulatedCosts) {
           data: scatterData,
           showLine: false,
           pointRadius: 3,
-          pointBackgroundColor: "#000",
-          pointBorderColor: "#000",
-          borderColor: "#000",
-          backgroundColor: "#000",
+          pointBackgroundColor: "#8a1a2b",
+          pointBorderColor: "#8a1a2b",
+          borderColor: "#8a1a2b",
+          backgroundColor: "#8a1a2b",
         },
         {
           label: "Trend",

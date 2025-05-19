@@ -87,8 +87,16 @@ h2 {
   width: 60%; /* Increased width for better readability */
   height: 600px; /* Increased height for better readability */
   display: flex;
-  justify-content: center; /* Center the DSM horizontally */
-  align-items: center; /* Center the DSM vertically */
+  flex-direction: column; /* Stack title and DSM vertically */
+  justify-content: center; /* Center vertically */
+  align-items: center;     /* Center horizontally */
+  gap: 8px;                /* Small gap between title and DSM */
+}
+
+.dsm-section h2 {
+  margin: 0 0 8px 0; /* Reduce space below the title */
+  padding: 0;
+  color: #a31f34;
 }
 
 .graph-section {
@@ -104,7 +112,8 @@ h2 {
   max-width: 600px; /* Increase the maximum width of the DSM */
   max-height: 500px; /* Increase the maximum height of the DSM */
   border-collapse: collapse;
-  margin: auto; /* Center the DSM horizontally */
+  margin: 0 auto; /* Center the DSM horizontally */
+  /* Remove top margin if present */
 }
 
 .dsm-section table td {
