@@ -102,6 +102,11 @@ function simulateCostEvolution(DSM, n, d, steps = 1000000, numPoints = 200) {
   ).filter((v, i, arr) => i === 0 || v > arr[i - 1]);
   let sampleIdx = 0;
 
+  // Make improvement factor depend on d: higher d, less aggressive improvement
+  // For d=1: [0.5,0.9), for d=n: [0.95,1.0)
+  const minFactor = 0.5 + 0.45 * (d - 1) / (n - 1); // from 0.5 to 0.95
+  const maxFactor = 0.9 + 0.1 * (d - 1) / (n - 1);  // from 0.9 to 1.0
+
   for (let t = 1; t <= steps; t++) {
     const selectedComponent = Math.floor(Math.random() * n);
     const depIndices = DSM[selectedComponent]
@@ -111,10 +116,12 @@ function simulateCostEvolution(DSM, n, d, steps = 1000000, numPoints = 200) {
     if (depIndices.length === 0) continue;
 
     const avgDepCost = depIndices.reduce((sum, idx) => sum + costs[idx], 0) / depIndices.length;
-    let improvementFactor = 0.5 + 0.4 * Math.random();
+    let improvementFactor = minFactor + (maxFactor - minFactor) * Math.random();
     let proposedCost = avgDepCost * improvementFactor;
     if (Math.random() < 0.05) {
-      proposedCost = avgDepCost * (0.2 + 0.3 * Math.random());
+      // Breakthrough also less aggressive for high d
+      let breakthroughFactor = 0.2 + 0.3 * (1 - (d - 1) / (n - 1)); // from 0.5 (d=1) to 0.2 (d=n)
+      proposedCost = avgDepCost * (breakthroughFactor + (0.5 - breakthroughFactor) * Math.random());
     }
     if (proposedCost < costs[selectedComponent] - 1e-8 || Math.random() < 0.02) {
       costs[selectedComponent] = proposedCost;
@@ -350,6 +357,9 @@ function updateChart(tPlot, simulatedCosts) {
   // Prepare scatter data (circles)
   const scatterData = tPlot.map((x, i) => ({ x, y: simulatedCosts[i] }));
 
+  // Prepare line data (same as scatter, but as a line)
+  const lineData = tPlot.map((x, i) => ({ x, y: simulatedCosts[i] }));
+
   // Find min/max for y-axis
   const minY = Math.min(...simulatedCosts.filter(v => v > 0));
   const maxY = Math.max(...simulatedCosts);
@@ -375,6 +385,15 @@ function updateChart(tPlot, simulatedCosts) {
           pointBorderColor: "#000",
           borderColor: "#000",
           backgroundColor: "#000",
+        },
+        {
+          label: "Trend",
+          data: lineData,
+          showLine: true,
+          pointRadius: 0,
+          borderColor: "#222",
+          borderWidth: 2,
+          fill: false,
         }
       ],
     },
