@@ -166,25 +166,15 @@ function renderDSM(DSM) {
   let container = document.getElementById("dsmContainer");
   container.innerHTML = ""; // Clear previous content
 
-  // Responsive container style
-  container.style.display = "block";
-  container.style.width = "100%";
-  container.style.maxWidth = "400px"; // or 100% for full width
-  container.style.height = "auto";
-  container.style.overflow = "auto";
-  container.style.margin = "0 auto";
-
   // Set CSS variable for cell sizing
   container.style.setProperty('--dsm-size', DSM.length);
 
   let table = document.createElement("table");
   table.style.margin = "0 auto";
   table.style.width = "100%";
-  table.style.height = "auto";
+  table.style.height = "100%";
   table.style.aspectRatio = "1 / 1";
   table.style.tableLayout = "fixed";
-  table.style.maxWidth = "100%";
-  table.style.borderCollapse = "collapse";
 
   const n = DSM.length;
 
@@ -193,11 +183,9 @@ function renderDSM(DSM) {
     row.forEach((cell, j) => {
       let td = document.createElement("td");
       td.className = cell ? "one" : "zero";
-      td.style.width = `${100 / n}%`;
-      td.style.height = `${100 / n}%`;
-      td.style.padding = "0";
-      td.style.aspectRatio = "1 / 1";
-      td.style.boxSizing = "border-box";
+      // No fixed pixel sizing, let CSS handle it responsively
+      td.style.width = "";
+      td.style.height = "";
 
       td.addEventListener("click", () => {
         if (i !== j) { // Don't allow toggling self-dependency
@@ -356,14 +344,9 @@ function updateChart(tPlot, simulatedCosts, highD) {
     console.error("Canvas element with id 'costChart' not found.");
     return;
   }
-  // Responsive canvas sizing
   canvas.style.display = "block";
-  canvas.style.width = "100%";
-  canvas.style.maxWidth = "600px";
-  canvas.style.height = "auto";
-  canvas.width = canvas.offsetWidth || 600;
+  canvas.width = 600;
   canvas.height = 400;
-
   const ctx = canvas.getContext("2d");
 
   if (costChart) {
@@ -516,32 +499,3 @@ function sampleLogarithmically(data, numSamples) {
 
   return sampled;
 }
-
-// --- CSS SUGGESTION (add to your stylesheet for best results) ---
-// .main-flex-container {
-//   display: flex;
-//   flex-wrap: wrap;
-//   gap: 24px;
-//   justify-content: center;
-//   align-items: flex-start;
-// }
-// #dsmContainer, #chartContainer {
-//   flex: 1 1 320px;
-//   max-width: 400px;
-//   min-width: 200px;
-//   box-sizing: border-box;
-// }
-// #costChart {
-//   width: 100% !important;
-//   height: auto !important;
-//   max-width: 600px;
-//   display: block;
-//   margin: 0 auto;
-// }
-// table { width: 100%; height: auto; }
-// td { aspect-ratio: 1 / 1; }
-// @media (max-width: 900px) {
-//   .main-flex-container { flex-direction: column; align-items: stretch; }
-//   #dsmContainer, #chartContainer { max-width: 100%; }
-// }
-// ---------------------------------------------------------------
