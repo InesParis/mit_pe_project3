@@ -94,7 +94,14 @@ function generateDSMFromMethod(n, d, method) {
 }
 
 function simulateCostEvolution(DSM, n, d, steps = 1000000, numPoints = 200) {
-  // Always use the stochastic simulation for all d
+  // --- NEW: Flat line for high dependency ---
+  // Define "high dependency" as d >= n - 2 (can adjust threshold as needed)
+  if (d >= n - 2) {
+    // Flat line: cost stays constant at 1
+    const costs = Array(numPoints).fill(1);
+    return { costs, highD: true };
+  }
+
   let costs = Array.from({ length: n }, () => 0.5 + Math.random());
   const costHistory = [];
   const sampleSteps = Array.from({ length: numPoints }, (_, i) =>
